@@ -234,15 +234,33 @@
     border:3px solid #E0D2B8;
     border-bottom-width:5px;
     border-radius:14px;
-    padding:14px 10px;
+    padding:12px 14px;
     cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:10px;
     transition:transform .08s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease;
-    text-align:center;
+    text-align:left;
   }
+  .choice-letter{
+    flex-shrink:0;
+    width:26px; height:26px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
+    background:#F3E9D4;
+    color:#8a6a3a;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:13px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .choice-label{ flex:1; }
   .choice:hover{ border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,111,60,0.25); }
   .choice:active{ transform:translateY(1px); }
   .choice.correct{ background:linear-gradient(180deg,#4CBF5D,var(--correct)); border-color:#2b7a37; color:#fff; }
+  .choice.correct .choice-letter{ background:rgba(255,255,255,0.3); color:#fff; }
   .choice.wrong{ background:linear-gradient(180deg,#E25858,var(--wrong)); border-color:#a13030; color:#fff; }
+  .choice.wrong .choice-letter{ background:rgba(255,255,255,0.3); color:#fff; }
   .choice.disabled{ pointer-events:none; opacity:.55; }
   .feedback{
     margin-top:16px;
@@ -326,6 +344,32 @@
   }
 
   /* Teacher panel */
+  #soundBtn{
+    font-size:18px;
+    line-height:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  #soundBtn.muted{ opacity:.55; }
+
+  #targetPips{
+    position:absolute; top:46px; left:50%; transform:translateX(-50%);
+    display:flex; gap:6px;
+    z-index:5; pointer-events:none;
+  }
+  #targetPips .pip{
+    width:12px; height:12px; border-radius:50%;
+    background:var(--pig-green);
+    border:2px solid var(--pig-green-dark);
+    transition:transform .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
+    box-shadow:0 2px 0 rgba(0,0,0,.15);
+  }
+  #targetPips .pip.down{
+    background:rgba(255,255,255,0.25);
+    border-color:rgba(255,255,255,0.4);
+    transform:scale(0.7);
+    opacity:.6;
+  }
+
   #teacherBtn{
     pointer-events:auto;
     background:var(--ui-cream);
@@ -426,11 +470,13 @@
 <body>
 <div id="stage">
   <div id="title">🐦 Word Slinger</div>
+  <div id="targetPips"></div>
   <div id="topbar">
     <div class="badge"><span class="label" id="levelLabel">Level</span><span id="levelVal">1</span></div>
     <div class="badge"><span class="label">Score</span><span id="scoreVal">0</span></div>
     <div class="badge"><span id="birdsIcon">🐦</span> <span id="birdsVal">5</span> left</div>
     <div class="badge" id="teamBadge"><span class="label">Team</span><span id="teamNameVal">-</span></div>
+    <button id="soundBtn" class="badge" title="Toggle sound">🔊</button>
     <button id="teacherBtn">✏️ Teacher Panel</button>
   </div>
   <canvas id="game"></canvas>
@@ -607,6 +653,160 @@
   window.addEventListener('resize', resize);
   resize();
 
+  // ---------------- Sound engine (synthesized, no external files) ----------------
+  const Sound = (function(){
+    let ctx = null;
+    let unlocked = false;
+    let muted = false;
+    try{ muted = localStorage.getItem('wordSlingerMuted') === '1'; }catch(e){}
+
+    function ensureCtx(){
+      if(!ctx){
+        try{ ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch(e){ ctx = null; }
+      }
+      if(ctx && ctx.state === 'suspended'){ ctx.resume(); }
+      return ctx;
+    }
+
+    function unlock(){
+      if(unlocked) return;
+      unlocked = true;
+      ensureCtx();
+    }
+
+    // simple tone: freq can be a number, or {from,to} for a pitch sweep
+    function tone(freq, dur, opts){
+      if(muted) return;
+      const ac = ensureCtx();
+      if(!ac) return;
+      opts = opts || {};
+      const type = opts.type || 'sine';
+      const gainVal = opts.gain != null ? opts.gain : 0.18;
+      const delay = opts.delay || 0;
+      const t0 = ac.currentTime + delay;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      if(typeof freq === 'number'){
+        osc.frequency.setValueAtTime(freq, t0);
+      } else {
+        osc.frequency.setValueAtTime(freq.from, t0);
+        osc.frequency.exponentialRampToValueAtTime(Math.max(1,freq.to), t0+dur);
+      }
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(gainVal, t0+Math.min(0.02,dur*0.3));
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(t0);
+      osc.stop(t0+dur+0.02);
+    }
+
+    // short filtered burst of white noise, for explosions / thuds / whoosh
+    function noise(dur, opts){
+      if(muted) return;
+      const ac = ensureCtx();
+      if(!ac) return;
+      opts = opts || {};
+      const delay = opts.delay || 0;
+      const t0 = ac.currentTime + delay;
+      const bufferSize = Math.floor(ac.sampleRate * dur);
+      const buffer = ac.createBuffer(1, bufferSize, ac.sampleRate);
+      const data = buffer.getChannelData(0);
+      for(let i=0;i<bufferSize;i++) data[i] = Math.random()*2-1;
+      const src = ac.createBufferSource();
+      src.buffer = buffer;
+      const filter = ac.createBiquadFilter();
+      filter.type = opts.filterType || 'lowpass';
+      filter.frequency.setValueAtTime(opts.freqFrom || 1800, t0);
+      if(opts.freqTo != null){
+        filter.frequency.exponentialRampToValueAtTime(Math.max(40,opts.freqTo), t0+dur);
+      }
+      const gain = ac.createGain();
+      const gainVal = opts.gain != null ? opts.gain : 0.22;
+      gain.gain.setValueAtTime(gainVal, t0);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+      src.connect(filter).connect(gain).connect(ac.destination);
+      src.start(t0);
+      src.stop(t0+dur+0.02);
+    }
+
+    function sequence(notes){ notes.forEach(n => tone(n.freq, n.dur, n)); }
+
+    return {
+      unlock,
+      isMuted: () => muted,
+      setMuted(v){
+        muted = v;
+        try{ localStorage.setItem('wordSlingerMuted', muted ? '1' : '0'); }catch(e){}
+      },
+      click(){ tone(520, 0.05, {type:'square', gain:0.08}); },
+      select(){ tone(700, 0.06, {type:'triangle', gain:0.1}); },
+      launch(type){
+        tone({from:180, to:520}, 0.16, {type:'sawtooth', gain:0.16});
+        if(type === 'yellow') tone({from:400,to:900}, 0.1, {type:'square', gain:0.08, delay:0.05});
+        if(type === 'black') tone(90, 0.12, {type:'square', gain:0.12, delay:0.02});
+        if(type === 'blue') tone({from:600,to:1000}, 0.08, {type:'sine', gain:0.09, delay:0.03});
+      },
+      ability(kind){
+        if(kind === 'speed') tone({from:500,to:1400}, 0.18, {type:'sawtooth', gain:0.14});
+        else if(kind === 'bomb') noise(0.5, {freqFrom:1600, freqTo:60, gain:0.32});
+        else if(kind === 'split') sequence([
+          {freq:700, dur:0.07, type:'triangle', gain:0.12, delay:0},
+          {freq:900, dur:0.07, type:'triangle', gain:0.1, delay:0.05},
+          {freq:1100, dur:0.07, type:'triangle', gain:0.1, delay:0.1},
+        ]);
+      },
+      bounce(){ tone({from:260,to:140}, 0.09, {type:'sine', gain:0.12}); },
+      hit(){
+        noise(0.12, {freqFrom:2200, freqTo:400, gain:0.18});
+        tone({from:700,to:200}, 0.14, {type:'sine', gain:0.16, delay:0.02});
+      },
+      correct(){
+        sequence([
+          {freq:523, dur:0.11, type:'triangle', gain:0.16, delay:0},
+          {freq:659, dur:0.11, type:'triangle', gain:0.16, delay:0.1},
+          {freq:784, dur:0.18, type:'triangle', gain:0.18, delay:0.2},
+        ]);
+      },
+      wrong(){
+        sequence([
+          {freq:220, dur:0.16, type:'sawtooth', gain:0.14, delay:0},
+          {freq:160, dur:0.22, type:'sawtooth', gain:0.14, delay:0.13},
+        ]);
+      },
+      levelComplete(){
+        sequence([
+          {freq:523, dur:0.12, type:'triangle', gain:0.16, delay:0},
+          {freq:659, dur:0.12, type:'triangle', gain:0.16, delay:0.12},
+          {freq:784, dur:0.12, type:'triangle', gain:0.16, delay:0.24},
+          {freq:1046, dur:0.28, type:'triangle', gain:0.2, delay:0.36},
+        ]);
+      },
+      outOfBirds(){
+        sequence([
+          {freq:300, dur:0.18, type:'sawtooth', gain:0.14, delay:0},
+          {freq:220, dur:0.18, type:'sawtooth', gain:0.14, delay:0.16},
+          {freq:150, dur:0.3, type:'sawtooth', gain:0.14, delay:0.32},
+        ]);
+      },
+      locked(){ tone(180, 0.08, {type:'square', gain:0.1}); },
+    };
+  })();
+
+  const soundBtn = document.getElementById('soundBtn');
+  function refreshSoundBtn(){
+    soundBtn.textContent = Sound.isMuted() ? '🔇' : '🔊';
+    soundBtn.classList.toggle('muted', Sound.isMuted());
+  }
+  refreshSoundBtn();
+  soundBtn.addEventListener('click', () => {
+    Sound.unlock();
+    Sound.setMuted(!Sound.isMuted());
+    refreshSoundBtn();
+  });
+  window.addEventListener('pointerdown', Sound.unlock, {once:true});
+
   // ---------------- Question bank ----------------
   const QUESTIONS = [
     // easy vocabulary
@@ -673,8 +873,8 @@
   let usedBirdTypes = new Set(); // special bird types already spent this level/turn (red is exempt)
 
   // ---------------- Game state ----------------
-  const GRAVITY = 1400; // px/s^2
-  const AIR_DRAG = 0.25; // gentle horizontal air resistance, keeps arcs feeling grounded
+  const GRAVITY = 1500; // px/s^2
+  const AIR_DRAG = 0.35; // gentle horizontal air resistance, keeps arcs feeling grounded
   let level = 1;
   let score = 0;
   let birdsLeft = 5;
@@ -737,6 +937,7 @@
   function selectBird(type){
     if(!BIRD_TYPES[type]) return;
     if(type !== 'red' && usedBirdTypes.has(type)) return; // already spent this level/turn
+    Sound.select();
     selectedBirdType = type;
     if(bird && !bird.launched){
       bird.type = type;
@@ -773,12 +974,26 @@
     if(competitionActive && teams[currentTeamIndex]){
       document.getElementById('teamNameVal').textContent = teams[currentTeamIndex].name;
     }
+    updateTargetPips();
+  }
+
+  const targetPipsEl = document.getElementById('targetPips');
+  function updateTargetPips(){
+    targetPipsEl.innerHTML = '';
+    targets.forEach(t => {
+      const pip = document.createElement('div');
+      pip.className = 'pip' + (t.alive ? '' : ' down');
+      targetPipsEl.appendChild(pip);
+    });
   }
 
   const birdOptEls = Array.from(document.querySelectorAll('.bird-opt'));
   birdOptEls.forEach(el => {
     el.addEventListener('click', () => {
-      if(el.classList.contains('disabled') || el.classList.contains('used-up')) return;
+      if(el.classList.contains('disabled') || el.classList.contains('used-up')){
+        if(el.classList.contains('used-up')) Sound.locked();
+        return;
+      }
       selectBird(el.dataset.type);
     });
   });
@@ -851,6 +1066,7 @@
     bird.launched = true;
     bird.wasLaunched = true;
     bird.squash = 1; // launch "stretch" pop, decays in render
+    Sound.launch(bird.type);
     if(bird.type !== 'red') usedBirdTypes.add(bird.type); // special birds are one-shot
     dragPos = null;
     updateAbilityHint();
@@ -889,6 +1105,7 @@
         b.bounces = (b.bounces||0) + 1;
         spawnDust(b.x, GROUND_Y);
         triggerShake(2.5);
+        Sound.bounce();
       } else {
         landProjectile(b);
       }
@@ -939,6 +1156,7 @@
     if(!conf || !conf.ability) return;
     bird.abilityUsed = true;
     updateAbilityHint();
+    Sound.ability(conf.ability);
     if(conf.ability === 'speed'){
       bird.vx *= 1.65;
       bird.vy -= 70;
@@ -1008,6 +1226,8 @@
     updateAbilityHint();
     spawnBurst(t.x, t.y);
     triggerShake(6);
+    Sound.hit();
+    updateTargetPips();
     openQuestion(t);
   }
 
@@ -1379,10 +1599,18 @@
     const order = q.choices.map((c,i)=>({c,i}));
     q._order = order;
 
-    order.forEach(item => {
+    const letters = ['A','B','C','D'];
+    order.forEach((item, i) => {
       const btn = document.createElement('div');
       btn.className = 'choice';
-      btn.textContent = item.c;
+      const badge = document.createElement('span');
+      badge.className = 'choice-letter';
+      badge.textContent = letters[i] || '';
+      const label = document.createElement('span');
+      label.className = 'choice-label';
+      label.textContent = item.c;
+      btn.appendChild(badge);
+      btn.appendChild(label);
       btn.addEventListener('click', () => selectChoice(item.i, q, target, btn));
       choicesEl.appendChild(btn);
     });
@@ -1396,16 +1624,18 @@
     const correctIdx = q.answer;
     if(idx === correctIdx){
       btnEl.classList.add('correct');
-      feedbackEl.textContent = 'Correct! Target destroyed. +10 points';
+      feedbackEl.textContent = '✓ Correct! Target destroyed. +10 points';
       feedbackEl.className = 'feedback correct';
       score += 10;
       target.alive = false;
+      Sound.correct();
     } else {
       btnEl.classList.add('wrong');
       buttons[correctIdxToButtonIndex(q, correctIdx)].classList.add('correct');
-      feedbackEl.textContent = "Not quite — that target survives. Try the next one!";
+      feedbackEl.textContent = "✗ Not quite — that target survives. Try the next one!";
       feedbackEl.className = 'feedback wrong';
       target.alive = true; // survives, bird already used
+      Sound.wrong();
     }
     updateHUD();
     nextBtn.classList.add('show');
@@ -1417,6 +1647,7 @@
   }
 
   nextBtn.addEventListener('click', () => {
+    Sound.click();
     overlay.classList.remove('show');
     birdsLeft = Math.max(0, birdsLeft - 1);
     updateHUD();
@@ -1434,10 +1665,12 @@
   const endBtn = document.getElementById('endBtn');
 
   function showLevelComplete(){
+    Sound.levelComplete();
     endTitle.textContent = `Level ${level} Complete! 🎉`;
     endText.textContent = `Nice work! Score: ${score}. Ready for level ${level+1}?`;
     endBtn.textContent = 'Next Level ▶';
     endBtn.onclick = () => {
+      Sound.click();
       endcard.classList.remove('show');
       startLevel(level+1);
     };
@@ -1445,10 +1678,12 @@
   }
 
   function showOutOfBirds(){
+    Sound.outOfBirds();
     endTitle.textContent = 'Out of Birds!';
     endText.textContent = `Some targets are still standing. Score: ${score}. Try level ${level} again?`;
     endBtn.textContent = 'Retry Level';
     endBtn.onclick = () => {
+      Sound.click();
       endcard.classList.remove('show');
       startLevel(level);
     };
@@ -1475,10 +1710,11 @@
   const qCountEl = document.getElementById('qCount');
 
   teacherBtn.addEventListener('click', () => {
+    Sound.click();
     teacherPanel.classList.add('open');
     paused = true;
   });
-  panelClose.addEventListener('click', closeTeacherPanel);
+  panelClose.addEventListener('click', () => { Sound.click(); closeTeacherPanel(); });
   function closeTeacherPanel(){
     teacherPanel.classList.remove('open');
     if(!overlay.classList.contains('show') && !endcard.classList.contains('show') &&
@@ -1634,6 +1870,7 @@
   function addTeam(){
     const name = fTeamName.value.trim();
     if(!name) return;
+    Sound.click();
     teams.push({ name, score: 0 });
     fTeamName.value = '';
     renderTeamList();
@@ -1716,6 +1953,7 @@
   }
 
   document.getElementById('teamTurnStartBtn').addEventListener('click', () => {
+    Sound.click();
     teamTurnCard.classList.remove('show');
     startTeamTurn();
   });
