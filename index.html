@@ -70,8 +70,9 @@
     display:flex;
     align-items:center;
     gap:8px;
-    transition:transform .12s ease;
+    transition:transform .12s ease, box-shadow .2s ease;
   }
+  .badge:hover{ box-shadow:0 4px 0 rgba(0,0,0,0.2), 0 0 12px 2px rgba(255,201,60,0.5); }
   .badge.pulse{ animation:badgePulse .4s ease; }
   @keyframes badgePulse{
     0%{transform:scale(1);}
@@ -92,6 +93,11 @@
     letter-spacing:.02em;
     z-index:5;
     pointer-events:none;
+    animation:titleFloat 3.6s ease-in-out infinite;
+  }
+  @keyframes titleFloat{
+    0%,100%{ transform:translateX(-50%) translateY(0); }
+    50%{ transform:translateX(-50%) translateY(-4px); }
   }
 
   /* Bird queue dock */
@@ -126,6 +132,11 @@
     border-color:#fff;
     box-shadow:0 0 0 3px var(--accent), 0 4px 0 rgba(0,0,0,.25);
     transform:translateY(-4px);
+    animation:birdActiveGlow 1.4s ease-in-out infinite;
+  }
+  @keyframes birdActiveGlow{
+    0%,100%{ box-shadow:0 0 0 3px var(--accent), 0 4px 0 rgba(0,0,0,.25); }
+    50%{ box-shadow:0 0 0 3px var(--accent), 0 0 16px 5px rgba(255,111,60,0.55), 0 4px 0 rgba(0,0,0,.25); }
   }
   .bird-opt.disabled{ opacity:.4; cursor:not-allowed; transform:none !important; }
   .bird-opt.used-up{
@@ -274,6 +285,7 @@
   .feedback.correct{color:var(--correct);}
   .feedback.wrong{color:var(--wrong);}
   .next-btn{
+    position:relative; overflow:hidden;
     display:block;
     margin:14px auto 0;
     font-family:'Baloo 2',sans-serif;
@@ -290,6 +302,12 @@
     pointer-events:none;
     transition:opacity .2s ease;
   }
+  .next-btn::after{
+    content:''; position:absolute; top:0; left:-60%; width:35%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform:skewX(-20deg); pointer-events:none;
+  }
+  .next-btn:hover::after{ animation:btnShine .65s ease; }
   .next-btn.show{opacity:1; pointer-events:auto;}
   .next-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #c9631e; }
 
@@ -308,10 +326,17 @@
   .end-inner h2{ font-family:'Baloo 2',sans-serif; font-size:28px; margin:0 0 8px; color:var(--ui-ink);}
   .end-inner p{ font-size:15px; color:#6a5c48; margin:0 0 20px; }
   .end-btn{
+    position:relative; overflow:hidden;
     font-family:'Baloo 2',sans-serif; font-weight:700; font-size:16px;
     background:var(--bird-red); color:#fff; border:none; border-radius:12px;
     padding:12px 30px; cursor:pointer; box-shadow:0 4px 0 var(--bird-red-dark);
   }
+  .end-btn::after{
+    content:''; position:absolute; top:0; left:-60%; width:35%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform:skewX(-20deg); pointer-events:none;
+  }
+  .end-btn:hover::after{ animation:btnShine .65s ease; }
   .end-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--bird-red-dark); }
 
   .teamcard-overlay{
@@ -444,9 +469,16 @@
   .choice-input-row input[type=text]:focus{ outline:none; }
   .inline-check{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#6a5c48; margin-bottom:10px;}
   .btn{
+    position:relative; overflow:hidden;
     font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px;
     border:none; border-radius:10px; padding:10px 16px; cursor:pointer; color:#fff;
   }
+  .btn::after{
+    content:''; position:absolute; top:0; left:-60%; width:35%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform:skewX(-20deg); pointer-events:none;
+  }
+  .btn:hover::after{ animation:btnShine .65s ease; }
   .btn-add{ background:var(--correct); box-shadow:0 3px 0 #2b7a37; width:100%; }
   .btn-add:active{ transform:translateY(2px); box-shadow:0 1px 0 #2b7a37; }
   .btn-secondary{ background:#9c8a6c; box-shadow:0 3px 0 #7a6a52; }
@@ -521,32 +553,63 @@
   .netscreen{
     position:absolute; inset:0; z-index:90;
     display:none; align-items:center; justify-content:center;
-    background:linear-gradient(180deg,var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);
-    padding:20px; overflow-y:auto;
+    background:
+      radial-gradient(circle at 18% 12%, rgba(255,255,255,0.30), transparent 42%),
+      radial-gradient(circle at 88% 78%, rgba(255,255,255,0.22), transparent 46%),
+      linear-gradient(180deg,var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);
+    padding:20px; overflow-x:hidden; overflow-y:auto;
   }
   .netscreen.show{ display:flex; }
+  .netscreen::before, .netscreen::after{
+    content:''; position:absolute; pointer-events:none; border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0.85), rgba(255,255,255,0) 70%);
+    filter:blur(2px); z-index:0;
+  }
+  .netscreen::before{ width:150px; height:70px; top:14%; left:-16%; opacity:.75; animation:driftCloud 24s linear infinite; }
+  .netscreen::after{ width:110px; height:52px; top:64%; left:-20%; opacity:.55; animation:driftCloud 32s linear infinite 5s; }
+  @keyframes driftCloud{
+    from{ transform:translateX(0); }
+    to{ transform:translateX(135vw); }
+  }
   .net-card{
+    position:relative; z-index:1;
     background:linear-gradient(180deg,#FFFDF9 0%, var(--ui-cream) 100%);
     border-radius:24px; border:4px solid var(--wood-dark);
     box-shadow:0 10px 0 rgba(0,0,0,0.25), 0 20px 45px rgba(0,0,0,0.35);
     width:min(460px, 100%); padding:26px 22px; text-align:center;
-    animation:pop .28s cubic-bezier(.34,1.56,.64,1);
+    animation:pop .28s cubic-bezier(.34,1.56,.64,1), cardGlow 3.4s ease-in-out infinite .3s;
     max-height:92vh; overflow-y:auto;
+  }
+  @keyframes cardGlow{
+    0%,100%{ box-shadow:0 10px 0 rgba(0,0,0,0.25), 0 20px 45px rgba(0,0,0,0.35), 0 0 0 0 rgba(255,176,0,0); }
+    50%{ box-shadow:0 10px 0 rgba(0,0,0,0.25), 0 22px 50px rgba(0,0,0,0.38), 0 0 26px 5px rgba(255,176,0,0.32); }
   }
   .net-card h1{ font-family:'Baloo 2',sans-serif; font-size:26px; margin:0 0 4px; color:var(--ui-ink); }
   .net-card .sub{ font-size:14px; color:#6a5c48; margin:0 0 20px; }
   .role-btn{
+    position:relative; overflow:hidden;
     display:flex; align-items:center; gap:14px; width:100%;
     background:#fff; border:3px solid #E0D2B8; border-bottom-width:5px; border-radius:16px;
     padding:16px 16px; margin-bottom:12px; cursor:pointer; text-align:left;
-    font-family:'Nunito',sans-serif; transition:transform .1s ease, border-color .15s ease;
+    font-family:'Nunito',sans-serif; transition:transform .1s ease, border-color .15s ease, box-shadow .2s ease;
   }
+  .role-btn::after{
+    content:''; position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background:linear-gradient(120deg, transparent, rgba(255,255,255,0.6), transparent);
+    transform:skewX(-20deg); pointer-events:none;
+  }
+  .role-btn:hover::after{ animation:btnShine .65s ease; }
   .role-btn:active{ transform:translateY(2px); }
-  .role-btn:hover{ border-color:var(--accent); }
-  .role-btn .ric{ font-size:30px; flex-shrink:0; }
+  .role-btn:hover{ border-color:var(--accent); box-shadow:0 4px 14px rgba(255,111,60,0.25); }
+  .role-btn .ric{ font-size:30px; flex-shrink:0; display:inline-block; transition:transform .25s cubic-bezier(.34,1.56,.64,1); }
+  .role-btn:hover .ric{ transform:scale(1.15) rotate(-8deg); }
   .role-btn .rtx{ flex:1; }
   .role-btn .rtx .rt{ font-family:'Baloo 2',sans-serif; font-weight:800; font-size:17px; color:var(--ui-ink); }
   .role-btn .rtx .rd{ font-size:12.5px; color:#8a7860; margin-top:2px; line-height:1.35; }
+  @keyframes btnShine{
+    from{ left:-60%; }
+    to{ left:120%; }
+  }
 
   .net-input{
     width:100%; border:3px solid #E0D2B8; border-radius:14px; padding:14px 16px;
@@ -565,8 +628,14 @@
   .room-code-box .rlabel{ color:#c9b48c; font-size:11px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
   .room-code-box .rcode{
     font-family:'Baloo 2',sans-serif; font-weight:800; font-size:38px; letter-spacing:.12em;
-    color:#FFE9B8; margin:4px 0;
-    word-break:break-all;
+    margin:4px 0; word-break:break-all;
+    background:linear-gradient(90deg, #FFE9B8, #FFD65C, #FFB000, #FFD65C, #FFE9B8);
+    background-size:250% auto;
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:codeShimmer 3.5s linear infinite;
+  }
+  @keyframes codeShimmer{
+    to{ background-position:-250% center; }
   }
   .room-code-box .rcopy{
     font-family:'Nunito',sans-serif; font-weight:700; font-size:12.5px; color:#fff;
@@ -844,7 +913,10 @@
             <option value="3">Level 3 (hardest)</option>
           </select>
         </div>
-        <button class="btn btn-add" id="addQuestionBtn">+ Add Question</button>
+        <div class="btn-row">
+          <button class="btn btn-add" id="addQuestionBtn">+ Add Question</button>
+          <button class="btn btn-secondary" id="cancelEditBtn" style="display:none;">Cancel edit</button>
+        </div>
         <div id="formError" style="color:#D64545; font-size:12.5px; font-weight:700; margin-top:6px;"></div>
       </div>
 
@@ -993,6 +1065,79 @@
 
     function sequence(notes){ notes.forEach(n => tone(n.freq, n.dur, n)); }
 
+    // ---------------- Background music: a looping, bouncy chiptune ----------------
+    // Classic upbeat I-V-vi-IV pop progression, arpeggiated for a playful, kid-friendly bounce.
+    const MUSIC_TEMPO = 132;
+    const STEP_DUR = 60 / MUSIC_TEMPO / 2; // eighth-note length
+    const MUSIC_BARS = [
+      { bass:130.81, mel:[261.63,329.63,392.00,329.63,261.63,329.63,392.00,329.63] }, // C
+      { bass:196.00, mel:[392.00,493.88,587.33,493.88,392.00,493.88,587.33,493.88] }, // G
+      { bass:220.00, mel:[220.00,261.63,329.63,261.63,220.00,261.63,329.63,261.63] }, // Am
+      { bass:174.61, mel:[349.23,440.00,523.25,440.00,349.23,440.00,523.25,440.00] }, // F
+    ];
+    let musicPlaying = false;
+    let musicNextBarTime = 0;
+    let musicBarIdx = 0;
+    let musicTimerId = null;
+
+    function musicNote(t0, freq, dur, type, gainVal){
+      const ac = ensureCtx();
+      if(!ac) return;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(gainVal, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      osc.connect(gain).connect(ac.destination);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.03);
+    }
+
+    function scheduleMusicBar(t0, bar){
+      // bouncy "oom-pah" bass on beats 1 & 3
+      musicNote(t0, bar.bass, STEP_DUR * 1.7, 'triangle', 0.07);
+      musicNote(t0 + STEP_DUR * 4, bar.bass, STEP_DUR * 1.7, 'triangle', 0.06);
+      // plucky arpeggiated melody, eighth notes
+      bar.mel.forEach((freq, i) => {
+        musicNote(t0 + STEP_DUR * i, freq, STEP_DUR * 0.85, 'square', 0.04);
+      });
+    }
+
+    function musicTick(){
+      if(!musicPlaying) return;
+      const ac = ensureCtx();
+      if(!ac) return;
+      if(muted){
+        // Don't let the schedule drift far behind while muted, so it resumes smoothly.
+        if(musicNextBarTime < ac.currentTime) musicNextBarTime = ac.currentTime + 0.15;
+        return;
+      }
+      while(musicNextBarTime < ac.currentTime + 1.0){
+        scheduleMusicBar(musicNextBarTime, MUSIC_BARS[musicBarIdx % MUSIC_BARS.length]);
+        musicNextBarTime += STEP_DUR * 8;
+        musicBarIdx++;
+      }
+    }
+
+    function startMusic(){
+      if(musicPlaying) return;
+      const ac = ensureCtx();
+      if(!ac) return;
+      musicPlaying = true;
+      musicNextBarTime = ac.currentTime + 0.15;
+      musicBarIdx = 0;
+      musicTick();
+      if(musicTimerId) clearInterval(musicTimerId);
+      musicTimerId = setInterval(musicTick, 200);
+    }
+
+    function stopMusic(){
+      musicPlaying = false;
+      if(musicTimerId){ clearInterval(musicTimerId); musicTimerId = null; }
+    }
+
     return {
       unlock,
       isMuted: () => muted,
@@ -1051,6 +1196,9 @@
         ]);
       },
       locked(){ tone(180, 0.08, {type:'square', gain:0.1}); },
+      startMusic,
+      stopMusic,
+      isMusicPlaying: () => musicPlaying,
     };
   })();
 
@@ -1065,7 +1213,7 @@
     Sound.setMuted(!Sound.isMuted());
     refreshSoundBtn();
   });
-  window.addEventListener('pointerdown', Sound.unlock, {once:true});
+  window.addEventListener('pointerdown', () => { Sound.unlock(); Sound.startMusic(); }, {once:true});
 
   // ---------------- Question bank ----------------
   const QUESTIONS = [
@@ -1865,19 +2013,63 @@
 
   // ---------------- Read-aloud (Web Speech API) ----------------
   const canSpeak = ('speechSynthesis' in window);
+  let speechToken = 0; // invalidates any in-flight speech when a newer call takes over
+
+  // Any run of one-or-more "blank" symbols (_, ___, ..., -, :, etc.) is treated as a single
+  // silent gap — a fixed length of silence no matter whether it's one underscore or ten dots.
+  // Ordinary sentence punctuation (. , ! ?) is kept so the TTS engine still reads with natural
+  // rhythm/intonation; everything else that isn't a letter/number/space/apostrophe is a blank marker.
+  const BLANK_PAUSE_MS = 450; // silence length used for every blank, regardless of its symbol count
+  // (kept short on purpose — each new utterance already has its own brief engine start-up delay,
+  // so the two add together into a natural-feeling pause without dragging the sentence out.)
+
+  function splitForSpeech(t){
+    return t
+      .split(/[^a-zA-Z0-9\s'.,!?]+/g)          // split on any run of "blank" symbols
+      .map(part => part.replace(/\s{2,}/g, ' ').trim())
+      .filter(Boolean);
+  }
+
+  function stopSpeaking(){
+    speechToken++; // lets any in-flight callback know it's been superseded
+    if(canSpeak){ try{ window.speechSynthesis.cancel(); }catch(e){} }
+    readQBtn.classList.remove('speaking');
+  }
+
   function speakText(text){
     if(!canSpeak || Sound.isMuted() || !text) return;
-    try{
-      window.speechSynthesis.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.rate = 0.92;
-      utter.pitch = 1.05;
-      utter.lang = 'en-US';
-      utter.onstart = () => readQBtn.classList.add('speaking');
-      utter.onend = () => readQBtn.classList.remove('speaking');
-      utter.onerror = () => readQBtn.classList.remove('speaking');
-      window.speechSynthesis.speak(utter);
-    }catch(e){ /* speech not available — fail silently */ }
+    stopSpeaking();
+    const myToken = speechToken;
+    const segments = splitForSpeech(text);
+    if(!segments.length) return;
+
+    let i = 0;
+    function speakNext(){
+      if(myToken !== speechToken) return; // a newer speakText()/stopSpeaking() call took over
+      if(i >= segments.length){
+        readQBtn.classList.remove('speaking');
+        return;
+      }
+      try{
+        const utter = new SpeechSynthesisUtterance(segments[i]);
+        utter.rate = 0.92;
+        utter.pitch = 1.05;
+        utter.lang = 'en-US';
+        utter.onstart = () => { if(myToken === speechToken) readQBtn.classList.add('speaking'); };
+        utter.onend = () => {
+          if(myToken !== speechToken) return;
+          i++;
+          if(i < segments.length){
+            setTimeout(speakNext, BLANK_PAUSE_MS); // same short silence every time, whole sentence keeps going
+          } else {
+            readQBtn.classList.remove('speaking');
+          }
+        };
+        utter.onerror = () => { if(myToken === speechToken) readQBtn.classList.remove('speaking'); };
+        window.speechSynthesis.speak(utter);
+      }catch(e){ readQBtn.classList.remove('speaking'); }
+    }
+    speakNext();
   }
   if(!canSpeak) readQBtn.style.display = 'none';
   readQBtn.addEventListener('click', () => {
@@ -1956,7 +2148,7 @@
 
   nextBtn.addEventListener('click', () => {
     Sound.click();
-    if(canSpeak) window.speechSynthesis.cancel();
+    stopSpeaking();
     overlay.classList.remove('show');
     birdsLeft = Math.max(0, birdsLeft - 1);
     updateHUD();
@@ -2023,6 +2215,8 @@
   const clearBtn = document.getElementById('clearBtn');
   const qListEl = document.getElementById('qList');
   const qCountEl = document.getElementById('qCount');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  let editingIndex = null; // index into CUSTOM_QUESTIONS currently loaded into the form for editing, or null
 
   teacherBtn.addEventListener('click', () => {
     Sound.click();
@@ -2111,6 +2305,62 @@
     });
   });
 
+  function resetQuestionForm(){
+    fCategory.value = '';
+    fQuestion.value = '';
+    fChoices.forEach(el => el.value = '');
+    fLevel.value = '1';
+    document.querySelector('input[name="fCorrect"][value="0"]').checked = true;
+    pendingQuestionImage = null;
+    fQuestionImage.value = '';
+    fImagePreview.src = '';
+    fImagePreviewWrap.classList.remove('show');
+  }
+
+  // Leaves edit mode (used both after a successful save and when the teacher clicks Cancel).
+  function exitEditMode(){
+    editingIndex = null;
+    addQuestionBtn.textContent = '+ Add Question';
+    cancelEditBtn.style.display = 'none';
+    resetQuestionForm();
+    renderQuestionList();
+  }
+
+  // Loads an existing question's data into the form so the teacher can change it in place.
+  function beginEditQuestion(idx){
+    const q = CUSTOM_QUESTIONS[idx];
+    if(!q) return;
+    formError.textContent = '';
+    editingIndex = idx;
+    fCategory.value = q.tag || '';
+    fQuestion.value = q.q || '';
+    q.choices.forEach((c, i) => { if(fChoices[i]) fChoices[i].value = c; });
+    const radio = document.querySelector(`input[name="fCorrect"][value="${q.answer}"]`);
+    if(radio) radio.checked = true;
+    fLevel.value = String(q.level || 1);
+    if(q.image){
+      pendingQuestionImage = q.image;
+      fImagePreview.src = q.image;
+      fImagePreviewWrap.classList.add('show');
+    } else {
+      pendingQuestionImage = null;
+      fQuestionImage.value = '';
+      fImagePreview.src = '';
+      fImagePreviewWrap.classList.remove('show');
+    }
+    addQuestionBtn.textContent = '\ud83d\udcbe Save Changes';
+    cancelEditBtn.style.display = '';
+    renderQuestionList();
+    const panelBody = document.querySelector('#teacherPanel .panel-body');
+    if(panelBody) panelBody.scrollTop = 0;
+    fQuestion.focus();
+  }
+
+  cancelEditBtn.addEventListener('click', () => {
+    Sound.click();
+    exitEditMode();
+  });
+
   addQuestionBtn.addEventListener('click', () => {
     formError.textContent = '';
     const category = fCategory.value.trim() || 'Custom';
@@ -2123,21 +2373,16 @@
     if(!questionText){ formError.textContent = 'Please enter a question.'; return; }
     if(choices.some(c => !c)){ formError.textContent = 'Please fill in all 4 answer choices.'; return; }
 
-    const newQ = { tag: category, q: questionText, choices: choices, answer: correctIdx, level: lvl };
-    if(pendingQuestionImage) newQ.image = pendingQuestionImage;
-    CUSTOM_QUESTIONS.push(newQ);
+    const qData = { tag: category, q: questionText, choices: choices, answer: correctIdx, level: lvl };
+    if(pendingQuestionImage) qData.image = pendingQuestionImage;
 
-    fCategory.value = '';
-    fQuestion.value = '';
-    fChoices.forEach(el => el.value = '');
-    fLevel.value = '1';
-    document.querySelector('input[name="fCorrect"][value="0"]').checked = true;
-    pendingQuestionImage = null;
-    fQuestionImage.value = '';
-    fImagePreview.src = '';
-    fImagePreviewWrap.classList.remove('show');
+    if(editingIndex !== null && editingIndex >= 0 && editingIndex < CUSTOM_QUESTIONS.length){
+      CUSTOM_QUESTIONS[editingIndex] = qData;
+    } else {
+      CUSTOM_QUESTIONS.push(qData);
+    }
 
-    renderQuestionList();
+    exitEditMode();
   });
 
   function renderQuestionList(){
@@ -2151,6 +2396,7 @@
     CUSTOM_QUESTIONS.forEach((q, idx) => {
       const item = document.createElement('div');
       item.className = 'qlist-item';
+      if(idx === editingIndex) item.style.outline = '3px solid var(--accent2)';
       const meta = document.createElement('div');
       meta.className = 'meta';
       meta.textContent = `${q.tag} · Level ${q.level}`;
@@ -2160,13 +2406,26 @@
       const aline = document.createElement('div');
       aline.className = 'aline';
       aline.textContent = '✓ ' + q.choices[q.answer];
+      const edit = document.createElement('button');
+      edit.className = 'del';
+      edit.style.right = '34px';
+      edit.style.color = '#8a6a3a';
+      edit.textContent = '✏️';
+      edit.title = 'Edit this question';
+      edit.addEventListener('click', () => { Sound.click(); beginEditQuestion(idx); });
       const del = document.createElement('button');
       del.className = 'del';
       del.textContent = '🗑';
       del.title = 'Delete this question';
       del.addEventListener('click', () => {
+        const wasEditing = (idx === editingIndex);
         CUSTOM_QUESTIONS.splice(idx, 1);
-        renderQuestionList();
+        if(wasEditing){
+          exitEditMode();
+        } else {
+          if(editingIndex !== null && idx < editingIndex) editingIndex--;
+          renderQuestionList();
+        }
       });
       item.appendChild(meta);
       if(q.image){
@@ -2178,6 +2437,7 @@
       }
       item.appendChild(qline);
       item.appendChild(aline);
+      item.appendChild(edit);
       item.appendChild(del);
       qListEl.appendChild(item);
     });
@@ -2822,7 +3082,7 @@
     if(appRole === 'solo'){
       // No room/connection to lose — just hop back to the game-select screen.
       Sound.click();
-      window.speechSynthesis && window.speechSynthesis.cancel();
+      stopSpeaking();
       appRole = null;
       paused = true;
       teamBadge.style.display = 'none';
@@ -2833,7 +3093,7 @@
     }
     if(!confirm('Leave this room? This will end your connection to the game.')) return;
     Sound.click();
-    if(canSpeak) window.speechSynthesis.cancel();
+    stopSpeaking();
     if(appRole === 'host'){ teardownHost(); }
     else if(appRole === 'player'){ teardownPlayer(); }
     showScreen(landingScreen);
