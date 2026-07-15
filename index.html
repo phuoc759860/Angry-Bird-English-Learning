@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Slinger — Learn English by Launching Birds</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#2E6FB0;
+    --sky-mid:#5FB4E0;
+    --sky-bottom:#BFEAF5;
+    --sun:#FFD65C;
+    --ground-dark:#2F5233;
+    --ground-light:#5D9950;
+    --wood-dark:#5B3A22;
+    --bird-red:#E5484D;
+    --bird-red-dark:#B3373B;
+    --bird-yellow:#FFC93C;
+    --bird-yellow-dark:#D9A61E;
+    --bird-black:#3B3B45;
+    --bird-black-dark:#1E1E24;
+    --bird-blue:#4FA9E0;
+    --bird-blue-dark:#2E7FB0;
+    --bird-green:#7ED957;
+    --bird-green-dark:#4FA02A;
+    --pig-green:#8FBF5C;
+    --pig-green-dark:#6B9944;
+    --ui-cream:#FFF8EC;
+    --ui-ink:#2B2118;
+    --correct:#3FA34D;
+    --wrong:#D64545;
+    --accent:#FF6F3C;
+    --accent2:#FFB000;
+    --purple:#8B5FE6;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;overflow:hidden;
+    font-family:'Nunito',sans-serif;
+    background:linear-gradient(180deg,var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bottom) 100%);
+    -webkit-tap-highlight-color: transparent;
+  }
+  #stage{
+    position:relative;
+    width:100vw;height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  #topbar{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px;
+    z-index:20;
+    pointer-events:none;
+  }
+  .badge{
+    pointer-events:auto;
+    background:linear-gradient(180deg,#FFFDF8 0%, var(--ui-cream) 100%);
+    border:3px solid var(--wood-dark);
+    border-radius:16px;
+    padding:8px 16px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    color:var(--ui-ink);
+    box-shadow:0 4px 0 rgba(0,0,0,0.2);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    transition:transform .12s ease;
+  }
+  .badge.pulse{ animation:badgePulse .4s ease; }
+  @keyframes badgePulse{
+    0%{transform:scale(1);}
+    35%{transform:scale(1.18);}
+    100%{transform:scale(1);}
+  }
+  .badge .label{font-size:12px;font-weight:600;color:#7a6a55;text-transform:uppercase;letter-spacing:.05em;}
+  #title{
+    position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:26px;
+    background:linear-gradient(180deg,#FFFFFF 0%, #FFE9B8 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    text-shadow:0 3px 0 rgba(0,0,0,0.25);
+    letter-spacing:.02em;
+    z-index:5;
+    pointer-events:none;
+  }
+
+  /* Bird queue dock */
+  /* Bird selector */
+  #birdPicker{
+    position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+    z-index:15;
+    display:flex; gap:8px;
+    background:rgba(43,33,24,0.4);
+    backdrop-filter:blur(3px);
+    border:3px solid var(--wood-dark);
+    border-radius:20px;
+    padding:8px 9px;
+    pointer-events:auto;
+  }
+  .bird-opt{
+    position:relative;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    width:56px; padding:6px 3px 5px;
+    border-radius:14px;
+    border:3px solid transparent;
+    background:rgba(255,255,255,0.88);
+    cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease, opacity .12s ease, filter .12s ease;
+    font-family:'Baloo 2',sans-serif;
+  }
+  .bird-opt .ic{ font-size:22px; line-height:1; }
+  .bird-opt .nm{ font-size:9px; font-weight:800; color:var(--ui-ink); text-transform:uppercase; letter-spacing:.02em; text-align:center; line-height:1.15; margin-top:2px; }
+  .bird-opt .uses{ font-size:8px; font-weight:800; color:#8a7860; letter-spacing:.02em; margin-top:1px; }
+  .bird-opt:hover{ transform:translateY(-3px); }
+  .bird-opt.active{
+    border-color:#fff;
+    box-shadow:0 0 0 3px var(--accent), 0 4px 0 rgba(0,0,0,.25);
+    transform:translateY(-4px);
+  }
+  .bird-opt.disabled{ opacity:.4; cursor:not-allowed; transform:none !important; }
+  .bird-opt.used-up{
+    opacity:.32; cursor:not-allowed; transform:none !important;
+    filter:grayscale(1);
+    background:rgba(200,200,200,0.6);
+  }
+  .bird-opt.used-up .uses{ color:#a13030; }
+  .bird-opt.used-up::after{
+    content:'🔒';
+    position:absolute; top:-6px; right:-4px;
+    font-size:14px;
+    filter:none;
+    text-shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  #abilityHint{
+    position:absolute; left:50%; top:70px; transform:translateX(-50%);
+    z-index:16;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:15px;
+    color:#fff;
+    background:linear-gradient(180deg,var(--accent),#D9541C);
+    border:3px solid var(--wood-dark);
+    border-radius:14px;
+    padding:6px 16px;
+    box-shadow:0 4px 0 rgba(0,0,0,.25);
+    display:none;
+    pointer-events:none;
+    animation:hintBob 1s ease-in-out infinite;
+  }
+  #abilityHint.show{ display:block; }
+  @keyframes hintBob{
+    0%,100%{ transform:translateX(-50%) translateY(0); }
+    50%{ transform:translateX(-50%) translateY(-6px); }
+  }
+  .bird-tag{
+    display:inline-flex; align-items:center; gap:4px;
+    font-size:12px; font-weight:800; padding:2px 9px; border-radius:8px; color:#fff;
+    text-transform:uppercase; letter-spacing:.03em;
+  }
+  canvas{display:block;width:100%;height:100%;}
+
+  /* Modal */
+  #overlay{
+    position:absolute; inset:0;
+    background:rgba(20,20,10,0.45);
+    display:none;
+    align-items:center; justify-content:center;
+    z-index:50;
+    backdrop-filter: blur(2px);
+  }
+  #overlay.show{display:flex;}
+  .card{
+    background:linear-gradient(180deg,#FFFDF9 0%, var(--ui-cream) 100%);
+    border-radius:24px;
+    border:4px solid var(--wood-dark);
+    box-shadow:0 10px 0 rgba(0,0,0,0.25), 0 20px 45px rgba(0,0,0,0.35);
+    width:min(480px, 90vw);
+    padding:28px 24px 22px;
+    position:relative;
+    animation:pop .28s cubic-bezier(.34,1.56,.64,1);
+  }
+  @keyframes pop{
+    0%{transform:scale(.6) rotate(-4deg); opacity:0;}
+    100%{transform:scale(1) rotate(0); opacity:1;}
+  }
+  .pow{
+    position:absolute; top:-26px; left:50%; transform:translateX(-50%) rotate(-6deg);
+    font-family:'Baloo 2',sans-serif;
+    font-weight:800;
+    font-size:22px;
+    color:var(--ui-cream);
+    background:var(--accent);
+    border:3px solid var(--wood-dark);
+    padding:4px 18px;
+    border-radius:10px;
+    box-shadow:0 4px 0 rgba(0,0,0,0.25);
+  }
+  .qtag{
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:#a9793a;
+    margin-bottom:6px;
+  }
+  .qtext{
+    font-family:'Baloo 2',sans-serif;
+    font-size:22px;
+    font-weight:700;
+    color:var(--ui-ink);
+    line-height:1.3;
+    margin-bottom:18px;
+  }
+  .choices{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+  .choice{
+    font-family:'Nunito',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--ui-ink);
+    background:#fff;
+    border:3px solid #E0D2B8;
+    border-bottom-width:5px;
+    border-radius:14px;
+    padding:14px 10px;
+    cursor:pointer;
+    transition:transform .08s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    text-align:center;
+  }
+  .choice:hover{ border-color:var(--accent); transform:translateY(-2px); box-shadow:0 4px 10px rgba(255,111,60,0.25); }
+  .choice:active{ transform:translateY(1px); }
+  .choice.correct{ background:linear-gradient(180deg,#4CBF5D,var(--correct)); border-color:#2b7a37; color:#fff; }
+  .choice.wrong{ background:linear-gradient(180deg,#E25858,var(--wrong)); border-color:#a13030; color:#fff; }
+  .choice.disabled{ pointer-events:none; opacity:.55; }
+  .feedback{
+    margin-top:16px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    min-height:22px;
+    text-align:center;
+  }
+  .feedback.correct{color:var(--correct);}
+  .feedback.wrong{color:var(--wrong);}
+  .next-btn{
+    display:block;
+    margin:14px auto 0;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:12px;
+    padding:10px 26px;
+    cursor:pointer;
+    box-shadow:0 4px 0 #c9631e;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease;
+  }
+  .next-btn.show{opacity:1; pointer-events:auto;}
+  .next-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 #c9631e; }
+
+  /* End screens */
+  #endcard{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:60;
+    background:rgba(20,20,10,0.55);
+  }
+  #endcard.show{display:flex;}
+  .end-inner{
+    background:var(--ui-cream); border:4px solid var(--wood-dark); border-radius:22px;
+    padding:34px 30px; text-align:center; width:min(420px,88vw);
+    box-shadow:0 10px 0 rgba(0,0,0,.25);
+    animation:pop .3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .end-inner h2{ font-family:'Baloo 2',sans-serif; font-size:28px; margin:0 0 8px; color:var(--ui-ink);}
+  .end-inner p{ font-size:15px; color:#6a5c48; margin:0 0 20px; }
+  .end-btn{
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:16px;
+    background:var(--bird-red); color:#fff; border:none; border-radius:12px;
+    padding:12px 30px; cursor:pointer; box-shadow:0 4px 0 var(--bird-red-dark);
+  }
+  .end-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--bird-red-dark); }
+
+  .teamcard-overlay{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:61;
+    background:rgba(20,20,10,0.6);
+  }
+  .teamcard-overlay.show{display:flex;}
+  .round-tag{
+    font-size:13px; font-weight:800; color:#a9793a; text-transform:uppercase;
+    letter-spacing:.05em; margin-bottom:6px;
+  }
+  #rankingList{ text-align:left; margin:16px 0; max-height:44vh; overflow-y:auto; }
+  .rank-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:10px 14px; margin-bottom:8px; border-radius:12px; background:#fff; border:2px solid #E8DCC2;
+  }
+  .rank-row.first{ background:#FFF3D6; border-color:#FFC93C; }
+  .rank-name{ font-weight:800; font-family:'Baloo 2',sans-serif; font-size:16px; color:var(--ui-ink); }
+  .rank-score{ font-weight:800; color:var(--correct); }
+
+  #teamBadge{ display:none; }
+
+  #hint{
+    position:absolute; bottom:96px; left:50%; transform:translateX(-50%);
+    color:#fff; font-weight:700; font-size:13px; text-shadow:0 2px 3px rgba(0,0,0,.35);
+    z-index:5; pointer-events:none; text-align:center; width:90%;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .card, .end-inner{animation:none;}
+  }
+
+  /* Teacher panel */
+  #teacherBtn{
+    pointer-events:auto;
+    background:var(--ui-cream);
+    border:3px solid var(--wood-dark);
+    border-radius:14px;
+    padding:8px 14px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:14px;
+    color:var(--ui-ink);
+    box-shadow:0 4px 0 rgba(0,0,0,0.2);
+    cursor:pointer;
+  }
+  #teacherBtn:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,0.2); }
+
+  #teacherPanel{
+    position:absolute; top:0; right:0; bottom:0;
+    width:min(420px, 92vw);
+    background:var(--ui-cream);
+    border-left:4px solid var(--wood-dark);
+    box-shadow:-8px 0 24px rgba(0,0,0,0.25);
+    z-index:70;
+    transform:translateX(100%);
+    transition:transform .28s ease;
+    display:flex; flex-direction:column;
+    overflow:hidden;
+  }
+  #teacherPanel.open{ transform:translateX(0); }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 18px; border-bottom:3px solid #E8DCC2;
+    flex-shrink:0;
+  }
+  .panel-head h2{
+    font-family:'Baloo 2',sans-serif; font-size:20px; margin:0; color:var(--ui-ink);
+  }
+  .panel-close{
+    background:none; border:none; font-size:22px; cursor:pointer; color:#8a7860; line-height:1;
+  }
+  .panel-body{
+    padding:16px 18px 90px;
+    overflow-y:auto;
+    flex:1;
+  }
+  .panel-section{
+    margin-bottom:20px;
+  }
+  .panel-section h3{
+    font-family:'Baloo 2',sans-serif; font-size:15px; color:#8a6a3a; margin:0 0 10px;
+    text-transform:uppercase; letter-spacing:.04em;
+  }
+  .field-row{ margin-bottom:10px; }
+  .field-row label{
+    display:block; font-size:12px; font-weight:700; color:#6a5c48; margin-bottom:4px;
+    text-transform:uppercase; letter-spacing:.03em;
+  }
+  .field-row input[type=text], .field-row select, .field-row textarea{
+    width:100%; border:2px solid #E0D2B8; border-radius:10px; padding:9px 10px;
+    font-family:'Nunito',sans-serif; font-size:14px; color:var(--ui-ink); background:#fff;
+  }
+  .field-row input[type=text]:focus, .field-row select:focus{
+    outline:none; border-color:var(--accent);
+  }
+  .choice-inputs{ display:grid; grid-template-columns:1fr; gap:8px; }
+  .choice-input-row{
+    display:flex; align-items:center; gap:8px;
+    border:2px solid #E0D2B8; border-radius:10px; padding:4px 4px 4px 10px; background:#fff;
+  }
+  .choice-input-row input[type=radio]{ flex-shrink:0; width:18px; height:18px; accent-color: var(--correct); }
+  .choice-input-row input[type=text]{ border:none; padding:8px 4px; flex:1; }
+  .choice-input-row input[type=text]:focus{ outline:none; }
+  .inline-check{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:#6a5c48; margin-bottom:10px;}
+  .btn{
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:14px;
+    border:none; border-radius:10px; padding:10px 16px; cursor:pointer; color:#fff;
+  }
+  .btn-add{ background:var(--correct); box-shadow:0 3px 0 #2b7a37; width:100%; }
+  .btn-add:active{ transform:translateY(2px); box-shadow:0 1px 0 #2b7a37; }
+  .btn-secondary{ background:#9c8a6c; box-shadow:0 3px 0 #7a6a52; }
+  .btn-secondary:active{ transform:translateY(2px); box-shadow:0 1px 0 #7a6a52; }
+  .btn-danger{ background:var(--wrong); box-shadow:0 3px 0 #a13030; }
+  .btn-row{ display:flex; gap:8px; flex-wrap:wrap; }
+  .qlist-item{
+    background:#fff; border:2px solid #E8DCC2; border-radius:12px; padding:10px 12px; margin-bottom:8px;
+    position:relative;
+  }
+  .qlist-item .meta{ font-size:11px; font-weight:800; color:#a9793a; text-transform:uppercase; letter-spacing:.04em; margin-bottom:4px;}
+  .qlist-item .qline{ font-size:14px; font-weight:700; color:var(--ui-ink); margin-bottom:4px; }
+  .qlist-item .aline{ font-size:12px; color:#3FA34D; font-weight:700; }
+  .qlist-item .del{
+    position:absolute; top:8px; right:8px; background:none; border:none; color:#c26a6a; font-size:16px; cursor:pointer;
+  }
+  .empty-note{ font-size:13px; color:#9a8a70; font-style:italic; }
+  #fileImport{ display:none; }
+  .panel-footer-note{ font-size:11.5px; color:#9a8a70; line-height:1.5; margin-top:6px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="title">🐦 Word Slinger</div>
+  <div id="topbar">
+    <div class="badge"><span class="label" id="levelLabel">Level</span><span id="levelVal">1</span></div>
+    <div class="badge"><span class="label">Score</span><span id="scoreVal">0</span></div>
+    <div class="badge"><span id="birdsIcon">🐦</span> <span id="birdsVal">5</span> left</div>
+    <div class="badge" id="teamBadge"><span class="label">Team</span><span id="teamNameVal">-</span></div>
+    <button id="teacherBtn">✏️ Teacher Panel</button>
+  </div>
+  <canvas id="game"></canvas>
+  <div id="birdPicker">
+    <div class="bird-opt" data-type="red">
+      <span class="ic">🐦</span><span class="nm">Classic</span><span class="uses">∞</span>
+    </div>
+    <div class="bird-opt" data-type="yellow">
+      <span class="ic">⚡</span><span class="nm">Speedy</span><span class="uses">x1</span>
+    </div>
+    <div class="bird-opt" data-type="black">
+      <span class="ic">💣</span><span class="nm">Boom</span><span class="uses">x1</span>
+    </div>
+    <div class="bird-opt" data-type="blue">
+      <span class="ic">🔷</span><span class="nm">Splitter</span><span class="uses">x1</span>
+    </div>
+    <div class="bird-opt" data-type="green">
+      <span class="ic">🟢</span><span class="nm">Bouncy</span><span class="uses">x1</span>
+    </div>
+  </div>
+  <div id="abilityHint"></div>
+  <div id="hint">Drag a bird backward and release to launch! Special birds only get 1 shot each — Classic Red is unlimited.</div>
+
+  <div id="overlay">
+    <div class="card">
+      <div class="pow">HIT!</div>
+      <div class="qtag" id="qtag">Vocabulary</div>
+      <div class="qtext" id="qtext">Question goes here</div>
+      <div class="choices" id="choices"></div>
+      <div class="feedback" id="feedback"></div>
+      <button class="next-btn" id="nextBtn">Continue ▶</button>
+    </div>
+  </div>
+
+  <div id="endcard">
+    <div class="end-inner">
+      <h2 id="endTitle">Level Complete!</h2>
+      <p id="endText">Great job! You popped every target.</p>
+      <button class="end-btn" id="endBtn">Next Level</button>
+    </div>
+  </div>
+
+  <div id="teamTurnCard" class="teamcard-overlay">
+    <div class="end-inner">
+      <div class="round-tag">Round <span id="roundNum">1</span></div>
+      <h2 id="teamTurnTitle">Team Panda, get ready!</h2>
+      <p id="teamTurnText">5 birds — answer questions correctly to score points.</p>
+      <button class="end-btn" id="teamTurnStartBtn">Start Turn ▶</button>
+    </div>
+  </div>
+
+  <div id="rankingCard" class="teamcard-overlay">
+    <div class="end-inner" style="width:min(460px,90vw);">
+      <h2>🏆 Final Ranking</h2>
+      <div id="rankingList"></div>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="end-btn" id="playAnotherRoundBtn">Play Another Round</button>
+        <button class="btn btn-secondary" id="endCompetitionBtn">End Competition</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="teacherPanel">
+    <div class="panel-head">
+      <h2>✏️ Teacher Panel</h2>
+      <button class="panel-close" id="panelClose">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="panel-section">
+        <h3>Add a question</h3>
+        <div class="field-row">
+          <label>Category (e.g. Vocabulary, Grammar, Spelling)</label>
+          <input type="text" id="fCategory" placeholder="Vocabulary">
+        </div>
+        <div class="field-row">
+          <label>Question</label>
+          <input type="text" id="fQuestion" placeholder="What is the opposite of 'hot'?">
+        </div>
+        <div class="field-row">
+          <label>Answer choices — select the correct one</label>
+          <div class="choice-inputs">
+            <div class="choice-input-row">
+              <input type="radio" name="fCorrect" value="0" checked>
+              <input type="text" id="fChoice0" placeholder="Choice A">
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="fCorrect" value="1">
+              <input type="text" id="fChoice1" placeholder="Choice B">
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="fCorrect" value="2">
+              <input type="text" id="fChoice2" placeholder="Choice C">
+            </div>
+            <div class="choice-input-row">
+              <input type="radio" name="fCorrect" value="3">
+              <input type="text" id="fChoice3" placeholder="Choice D">
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <label>Difficulty level (appears from this level onward)</label>
+          <select id="fLevel">
+            <option value="1">Level 1 (easiest)</option>
+            <option value="2">Level 2</option>
+            <option value="3">Level 3 (hardest)</option>
+          </select>
+        </div>
+        <button class="btn btn-add" id="addQuestionBtn">+ Add Question</button>
+        <div id="formError" style="color:#D64545; font-size:12.5px; font-weight:700; margin-top:6px;"></div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Game Mode</h3>
+        <label style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--ui-ink); margin-bottom:8px; cursor:pointer;">
+          <input type="radio" name="qMode" value="both" checked style="width:18px;height:18px;accent-color:var(--correct);">
+          Use both teacher &amp; built-in questions
+        </label>
+        <label style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:700; color:var(--ui-ink); margin-bottom:4px; cursor:pointer;">
+          <input type="radio" name="qMode" value="teacher" style="width:18px;height:18px;accent-color:var(--correct);">
+          Use only teacher's questions
+        </label>
+        <div id="modeWarning" style="color:#D64545; font-size:12.5px; font-weight:700; margin:6px 0 10px;"></div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="exportBtn">⬇ Export my questions</button>
+          <button class="btn btn-secondary" id="importBtn">⬆ Import questions</button>
+          <button class="btn btn-danger" id="clearBtn">Clear my questions</button>
+        </div>
+        <input type="file" id="fileImport" accept=".json">
+        <div class="panel-footer-note">Your questions only live in this browser tab. Use Export to save a file, and Import to load it again next time — nothing is uploaded anywhere.</div>
+      </div>
+
+      <div class="panel-section">
+        <h3>Teams &amp; Competition</h3>
+        <div class="field-row">
+          <label>Add a team</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="fTeamName" placeholder="Team Panda" style="flex:1;">
+            <button class="btn btn-secondary" id="addTeamBtn" style="flex-shrink:0;">+ Add</button>
+          </div>
+        </div>
+        <div id="teamList"><div class="empty-note">No teams added yet.</div></div>
+        <div class="field-row" style="margin-top:12px;">
+          <label>Birds per team turn</label>
+          <select id="fBirdsPerTurn">
+            <option value="3">3 birds</option>
+            <option value="5" selected>5 birds</option>
+            <option value="7">7 birds</option>
+            <option value="10">10 birds</option>
+          </select>
+        </div>
+        <button class="btn btn-add" id="startRotationBtn">▶ Start Team Rotation</button>
+        <div class="panel-footer-note">Each team takes a turn launching birds and answering questions. Their score is saved at the end of the turn, then the next team goes. After everyone has played, you'll see the final ranking.</div>
+      </div>
+
+      <div class="panel-section">
+        <h3>My questions (<span id="qCount">0</span>)</h3>
+        <div id="qList"><div class="empty-note">You haven't added any questions yet.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  let W, H, GROUND_Y;
+
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    GROUND_Y = H - 90;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // ---------------- Question bank ----------------
+  const QUESTIONS = [
+    // easy vocabulary
+    {tag:'Vocabulary', q:"What is the opposite of 'hot'?", choices:['Cold','Big','Fast','Loud'], answer:0, level:1},
+    {tag:'Vocabulary', q:"Which word means 'happy'?", choices:['Sad','Joyful','Angry','Tired'], answer:1, level:1},
+    {tag:'Vocabulary', q:"A baby dog is called a...", choices:['Kitten','Cub','Puppy','Chick'], answer:2, level:1},
+    {tag:'Vocabulary', q:"What do you use to write?", choices:['Fork','Pen','Shoe','Plate'], answer:1, level:1},
+    {tag:'Vocabulary', q:"Which one is a fruit?", choices:['Carrot','Banana','Potato','Onion'], answer:1, level:1},
+    {tag:'Grammar', q:"Choose the correct sentence:", choices:['She go to school.','She goes to school.','She going to school.','She gone to school.'], answer:1, level:1},
+    {tag:'Grammar', q:"I ___ a student.", choices:['am','is','are','be'], answer:0, level:1},
+    {tag:'Grammar', q:"They ___ playing football now.", choices:['is','am','are','be'], answer:2, level:1},
+    {tag:'Spelling', q:"Which word is spelled correctly?", choices:['Recieve','Receive','Recive','Receeve'], answer:1, level:2},
+    {tag:'Spelling', q:"Which word is spelled correctly?", choices:['Beatiful','Beautiful','Beutiful','Beautifull'], answer:1, level:2},
+    // medium
+    {tag:'Grammar', q:"Yesterday, I ___ to the market.", choices:['go','went','gone','going'], answer:1, level:2},
+    {tag:'Grammar', q:"She has ___ finished her homework.", choices:['already','yet','still','ago'], answer:0, level:2},
+    {tag:'Vocabulary', q:"What is a synonym for 'big'?", choices:['Tiny','Huge','Slow','Quiet'], answer:1, level:2},
+    {tag:'Vocabulary', q:"What is a synonym for 'smart'?", choices:['Clever','Weak','Slow','Lazy'], answer:0, level:2},
+    {tag:'Vocabulary', q:"'Enormous' means...", choices:['Very small','Very angry','Very large','Very quiet'], answer:2, level:2},
+    {tag:'Grammar', q:"He doesn't like coffee, ___?", choices:["doesn't he","does he","isn't he","is he"], answer:1, level:2},
+    {tag:'Idiom', q:"'It's raining cats and dogs' means...", choices:["Animals are falling","It's raining heavily","It's sunny","Pets are outside"], answer:1, level:3},
+    {tag:'Idiom', q:"'Break the ice' means...", choices:['Damage something cold','Start a conversation','Go skating','Get angry'], answer:1, level:3},
+    // harder
+    {tag:'Grammar', q:"If I ___ rich, I would travel the world.", choices:['am','was','were','be'], answer:2, level:3},
+    {tag:'Grammar', q:"By next year, she ___ her studies.", choices:['will finish','will have finished','finishes','finished'], answer:1, level:3},
+    {tag:'Vocabulary', q:"'Reluctant' most nearly means...", choices:['Eager','Unwilling','Confident','Careless'], answer:1, level:3},
+    {tag:'Vocabulary', q:"Choose the word that means 'to examine closely'.", choices:['Scan','Ignore','Discard','Skip'], answer:0, level:3},
+  ];
+
+  let CUSTOM_QUESTIONS = [];
+  let questionMode = 'both'; // 'both' or 'teacher'
+
+  function activePool(level){
+    let pool = [];
+    if(questionMode === 'both') pool = pool.concat(QUESTIONS);
+    pool = pool.concat(CUSTOM_QUESTIONS);
+    let filtered = pool.filter(q => q.level <= level);
+    if(filtered.length === 0) filtered = pool;
+    return filtered;
+  }
+
+  let usedRecently = [];
+  function pickQuestion(level){
+    let pool = activePool(level);
+    if(pool.length === 0) pool = QUESTIONS.filter(q => q.level <= level);
+    if(pool.length === 0) pool = QUESTIONS;
+    let available = pool.filter(q => !usedRecently.includes(q.q));
+    if(available.length === 0){ usedRecently = []; available = pool; }
+    const pick = available[Math.floor(Math.random()*available.length)];
+    usedRecently.push(pick.q);
+    if(usedRecently.length > 6) usedRecently.shift();
+    return pick;
+  }
+
+  // ---------------- Bird types ----------------
+  const BIRD_TYPES = {
+    red:    { name:'Classic Red',  icon:'🐦', color:'--bird-red',    colorDark:'--bird-red-dark',    ability:null,    hint:'' },
+    yellow: { name:'Speedy Chuck', icon:'⚡', color:'--bird-yellow', colorDark:'--bird-yellow-dark', ability:'speed', hint:'⚡ Tap the screen mid-flight to dash forward!' },
+    black:  { name:'Boom Bird',    icon:'💣', color:'--bird-black',  colorDark:'--bird-black-dark',  ability:'bomb',  hint:'💣 Tap the screen mid-flight to explode!' },
+    blue:   { name:'Splitter',     icon:'🔷', color:'--bird-blue',   colorDark:'--bird-blue-dark',   ability:'split', hint:'🔷 Tap the screen mid-flight to split into 3!' },
+    green:  { name:'Bouncy',       icon:'🟢', color:'--bird-green',  colorDark:'--bird-green-dark',  ability:null,    hint:'🟢 Bounces off the ground on its own!' },
+  };
+  let selectedBirdType = 'red';
+  let usedBirdTypes = new Set(); // special bird types already spent this level/turn (red is exempt)
+
+  // ---------------- Game state ----------------
+  const GRAVITY = 1400; // px/s^2
+  const AIR_DRAG = 0.25; // gentle horizontal air resistance, keeps arcs feeling grounded
+  let level = 1;
+  let score = 0;
+  let birdsLeft = 5;
+  let birdsPerLevel = 5;
+  let splitBirds = [];
+  let throwEnded = true;
+  let shake = { x:0, y:0, t:0, mag:0 }; // screen-shake state
+
+  // Team competition state
+  let teams = [];
+  let competitionActive = false;
+  let currentTeamIndex = 0;
+  let round = 1;
+  let birdsPerTurn = 5;
+  let turnEnding = false;
+
+  const slingBase = () => ({ x: Math.min(150, W*0.14), y: GROUND_Y - 40 });
+
+  let bird = null; // {x,y,vx,vy,launched,radius}
+  let dragging = false;
+  let dragPos = null;
+  let targets = []; // {x,y,r,alive,q}
+  let paused = false; // true while modal open or between throws
+  let awaitingNext = false;
+  let particles = [];
+
+  function makeTargetsForLevel(lvl){
+    const n = Math.min(3 + Math.floor(lvl/1), 6);
+    const arr = [];
+    const startX = W*0.5;
+    const spacing = (W - startX - 80) / n;
+    for(let i=0;i<n;i++){
+      const x = startX + spacing*i + spacing*0.5;
+      const h = 40 + Math.random()*Math.min(180, H*0.35);
+      arr.push({
+        x: x,
+        y: GROUND_Y - h,
+        r: 26,
+        alive: true,
+        q: pickQuestion(lvl)
+      });
+    }
+    return arr;
+  }
+
+  function resetBird(){
+    // if the selected special bird was already spent, fall back to the unlimited Classic Red
+    if(selectedBirdType !== 'red' && usedBirdTypes.has(selectedBirdType)){
+      selectedBirdType = 'red';
+    }
+    const base = slingBase();
+    const type = selectedBirdType;
+    bird = { x: base.x, y: base.y, vx:0, vy:0, launched:false, wasLaunched:false, radius:18, type, abilityUsed:false, bounces:0, squash:0 };
+    splitBirds = [];
+    throwEnded = false;
+    updateBirdPicker();
+    updateAbilityHint();
+  }
+
+  function selectBird(type){
+    if(!BIRD_TYPES[type]) return;
+    if(type !== 'red' && usedBirdTypes.has(type)) return; // already spent this level/turn
+    selectedBirdType = type;
+    if(bird && !bird.launched){
+      bird.type = type;
+      bird.abilityUsed = false;
+      bird.bounces = 0;
+    }
+    updateBirdPicker();
+  }
+
+  function startLevel(lvl){
+    level = lvl;
+    birdsLeft = birdsPerLevel;
+    targets = makeTargetsForLevel(lvl);
+    usedBirdTypes = new Set();
+    selectedBirdType = 'red';
+    resetBird();
+    updateHUD();
+  }
+
+  function updateHUD(){
+    document.getElementById('levelLabel').textContent = competitionActive ? 'Round' : 'Level';
+    document.getElementById('levelVal').textContent = competitionActive ? round : level;
+    const scoreEl = document.getElementById('scoreVal');
+    if(scoreEl.textContent !== String(score)){
+      scoreEl.textContent = score;
+      scoreEl.closest('.badge').classList.remove('pulse');
+      void scoreEl.offsetWidth;
+      scoreEl.closest('.badge').classList.add('pulse');
+    }
+    document.getElementById('birdsVal').textContent = birdsLeft;
+    if(bird){
+      document.getElementById('birdsIcon').textContent = (BIRD_TYPES[bird.type] || BIRD_TYPES.red).icon;
+    }
+    if(competitionActive && teams[currentTeamIndex]){
+      document.getElementById('teamNameVal').textContent = teams[currentTeamIndex].name;
+    }
+  }
+
+  const birdOptEls = Array.from(document.querySelectorAll('.bird-opt'));
+  birdOptEls.forEach(el => {
+    el.addEventListener('click', () => {
+      if(el.classList.contains('disabled') || el.classList.contains('used-up')) return;
+      selectBird(el.dataset.type);
+    });
+  });
+
+  function updateBirdPicker(){
+    const flying = bird && bird.launched;
+    birdOptEls.forEach(el => {
+      const type = el.dataset.type;
+      const isUsedUp = type !== 'red' && usedBirdTypes.has(type);
+      el.classList.toggle('active', type === selectedBirdType);
+      el.classList.toggle('disabled', !!flying);
+      el.classList.toggle('used-up', isUsedUp);
+    });
+  }
+
+  function updateAbilityHint(){
+    const hintEl = document.getElementById('abilityHint');
+    if(bird && bird.launched && !bird.abilityUsed && BIRD_TYPES[bird.type] && BIRD_TYPES[bird.type].hint){
+      hintEl.textContent = BIRD_TYPES[bird.type].hint;
+      hintEl.classList.add('show');
+    } else {
+      hintEl.classList.remove('show');
+    }
+  }
+
+  startLevel(1);
+
+  // ---------------- Input (drag to launch) ----------------
+  function getPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    return {x:cx, y:cy};
+  }
+
+  canvas.addEventListener('mousedown', onDown);
+  canvas.addEventListener('touchstart', onDown, {passive:true});
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove, {passive:true});
+  window.addEventListener('mouseup', onUp);
+  window.addEventListener('touchend', onUp);
+
+  function onDown(e){
+    if(paused || !bird) return;
+    if(bird.launched){
+      triggerAbility();
+      return;
+    }
+    const p = getPos(e);
+    const d = Math.hypot(p.x-bird.x, p.y-bird.y);
+    if(d < 60){ dragging = true; dragPos = p; }
+  }
+  function onMove(e){
+    if(!dragging) return;
+    dragPos = getPos(e);
+  }
+  function onUp(){
+    if(!dragging) return;
+    dragging = false;
+    const base = slingBase();
+    let dx = base.x - dragPos.x;
+    let dy = base.y - dragPos.y;
+    // clamp drag distance
+    const maxDrag = 120;
+    const dist = Math.hypot(dx,dy);
+    if(dist > maxDrag){ dx = dx/dist*maxDrag; dy = dy/dist*maxDrag; }
+    const power = 13;
+    bird.vx = dx * power;
+    bird.vy = dy * power;
+    bird.launched = true;
+    bird.wasLaunched = true;
+    bird.squash = 1; // launch "stretch" pop, decays in render
+    if(bird.type !== 'red') usedBirdTypes.add(bird.type); // special birds are one-shot
+    dragPos = null;
+    updateAbilityHint();
+    updateBirdPicker();
+  }
+
+  // ---------------- Physics / game loop ----------------
+  let lastTime = performance.now();
+  function loop(now){
+    const dt = Math.min(0.032, (now - lastTime)/1000);
+    lastTime = now;
+    updateShake(dt);
+    if(!paused) update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  function stepProjectile(b, dt){
+    b.vy += GRAVITY * dt;
+    b.vx *= (1 - AIR_DRAG * dt); // gentle drag so fast throws settle into a natural arc
+    b.x += b.vx * dt;
+    b.y += b.vy * dt;
+
+    // light trailing puff every few frames while airborne, for a sense of speed
+    b.trailTimer = (b.trailTimer||0) + dt;
+    if(b.trailTimer > 0.035){
+      b.trailTimer = 0;
+      spawnTrail(b.x, b.y, b.type);
+    }
+
+    if(b.y + b.radius >= GROUND_Y){
+      b.y = GROUND_Y - b.radius;
+      if(b.type === 'green' && (b.bounces||0) < 2){
+        b.vy *= -0.52;
+        b.vx *= 0.82;
+        b.bounces = (b.bounces||0) + 1;
+        spawnDust(b.x, GROUND_Y);
+        triggerShake(2.5);
+      } else {
+        landProjectile(b);
+      }
+    } else if(b.x - b.radius > W){
+      landProjectile(b);
+    }
+  }
+
+  function landProjectile(b){
+    if(b === bird){
+      bird.launched = false;
+      if(splitBirds.length === 0) endThrow(false);
+    } else {
+      b.alive = false;
+    }
+  }
+
+  function update(dt){
+    if(bird && bird.launched) stepProjectile(bird, dt);
+    for(const sb of splitBirds) if(sb.alive) stepProjectile(sb, dt);
+    splitBirds = splitBirds.filter(sb => sb.alive);
+
+    const flying = [];
+    if(bird && bird.launched) flying.push(bird);
+    for(const sb of splitBirds) flying.push(sb);
+
+    for(const t of targets){
+      if(!t.alive) continue;
+      for(const b of flying){
+        const d = Math.hypot(b.x - t.x, b.y - t.y);
+        if(d < b.radius + t.r){
+          hitTarget(t);
+          return;
+        }
+      }
+    }
+
+    // if the primary bird already landed and every split clone is done, close out the throw
+    if(bird && bird.wasLaunched && !bird.launched && splitBirds.length === 0 && !throwEnded){
+      endThrow(false);
+    }
+  }
+
+  // ---------------- Bird special abilities ----------------
+  function triggerAbility(){
+    if(!bird || !bird.launched || bird.abilityUsed) return;
+    const conf = BIRD_TYPES[bird.type];
+    if(!conf || !conf.ability) return;
+    bird.abilityUsed = true;
+    updateAbilityHint();
+    if(conf.ability === 'speed'){
+      bird.vx *= 1.65;
+      bird.vy -= 70;
+      spawnDust(bird.x, bird.y, getCss('--bird-yellow'));
+    } else if(conf.ability === 'bomb'){
+      spawnBurst(bird.x, bird.y, getCss('--bird-black'), 26);
+      triggerShake(9);
+      const near = targets.find(t => t.alive && Math.hypot(bird.x - t.x, bird.y - t.y) < 115);
+      if(near) hitTarget(near);
+    } else if(conf.ability === 'split'){
+      splitBird(bird);
+    }
+  }
+
+  function splitBird(b){
+    const speed = Math.hypot(b.vx, b.vy) || 400;
+    const baseAngle = Math.atan2(b.vy, b.vx);
+    [-0.34, 0.34].forEach(offset => {
+      splitBirds.push({
+        x: b.x, y: b.y,
+        vx: Math.cos(baseAngle+offset)*speed,
+        vy: Math.sin(baseAngle+offset)*speed,
+        radius: b.radius*0.72,
+        type: 'blue',
+        alive: true,
+      });
+    });
+    spawnBurst(b.x, b.y, getCss('--bird-blue'), 16);
+  }
+
+  function endThrow(hit){
+    if(!bird || throwEnded) return;
+    throwEnded = true;
+    bird.launched = false;
+    splitBirds = [];
+    updateAbilityHint();
+    birdsLeft = Math.max(0, birdsLeft-1);
+    updateHUD();
+    checkLevelState();
+    if(birdsLeft > 0 && !allTargetsDown()){
+      setTimeout(()=>{ if(!allTargetsDown()) resetBird(); }, 350);
+    }
+  }
+
+  function allTargetsDown(){
+    return targets.every(t => !t.alive);
+  }
+
+  function checkLevelState(){
+    if(competitionActive){
+      if(allTargetsDown() || birdsLeft <= 0){
+        setTimeout(endTeamTurn, 500);
+      }
+      return;
+    }
+    if(allTargetsDown()){
+      setTimeout(showLevelComplete, 400);
+    } else if(birdsLeft <= 0){
+      setTimeout(showOutOfBirds, 400);
+    }
+  }
+
+  function hitTarget(t){
+    t.alive = false;
+    if(bird) bird.launched = false;
+    splitBirds = [];
+    updateAbilityHint();
+    spawnBurst(t.x, t.y);
+    triggerShake(6);
+    openQuestion(t);
+  }
+
+  function spawnBurst(x,y,color,count){
+    const n = count || 14;
+    for(let i=0;i<n;i++){
+      const ang = Math.random()*Math.PI*2;
+      const spd = 80 + Math.random()*140;
+      particles.push({x,y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd - 60, life:0.6, color: color || (Math.random()>0.5?'#8FBF5C':'#FFC93C')});
+    }
+  }
+
+  function spawnTrail(x,y,type){
+    const conf = BIRD_TYPES[type] || BIRD_TYPES.red;
+    particles.push({
+      x: x + (Math.random()-0.5)*4, y: y + (Math.random()-0.5)*4,
+      vx:(Math.random()-0.5)*20, vy:(Math.random()-0.5)*20,
+      life:0.28, trail:true, color: getCss(conf.color)
+    });
+  }
+
+  function spawnDust(x,y,color){
+    for(let i=0;i<6;i++){
+      const ang = Math.PI + (Math.random()-0.5)*Math.PI*0.8;
+      const spd = 40 + Math.random()*80;
+      particles.push({x,y, vx:Math.cos(ang)*spd, vy:Math.sin(ang)*spd, life:0.4, color: color || 'rgba(255,255,255,0.8)'});
+    }
+  }
+
+  function triggerShake(mag){
+    shake.mag = Math.max(shake.mag, mag);
+    shake.t = 0.22;
+  }
+
+  function updateShake(dt){
+    if(shake.t > 0){
+      shake.t -= dt;
+      const power = Math.max(0, shake.t/0.22) * shake.mag;
+      shake.x = (Math.random()-0.5)*2*power;
+      shake.y = (Math.random()-0.5)*2*power;
+      if(shake.t <= 0){ shake.x = 0; shake.y = 0; shake.mag = 0; }
+    } else {
+      shake.x = 0; shake.y = 0;
+    }
+  }
+
+  function updateParticles(dt){
+    for(const p of particles){
+      p.vy += GRAVITY*0.4*dt;
+      p.x += p.vx*dt;
+      p.y += p.vy*dt;
+      p.life -= dt;
+    }
+    particles = particles.filter(p=>p.life>0);
+  }
+
+  // ---------------- Rendering ----------------
+  function render(){
+    updateParticles(1/60);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
+
+    // sun glow
+    const sunGrad = ctx.createRadialGradient(W-90,90,10,W-90,90,90);
+    sunGrad.addColorStop(0, 'rgba(255,216,115,0.9)');
+    sunGrad.addColorStop(1, 'rgba(255,216,115,0)');
+    ctx.fillStyle = sunGrad;
+    ctx.fillRect(W-190,-10,200,200);
+    ctx.beginPath();
+    ctx.fillStyle = '#FFD873';
+    ctx.arc(W-90, 90, 44, 0, Math.PI*2);
+    ctx.fill();
+
+    // clouds
+    drawCloud(W*0.2, 80, 1);
+    drawCloud(W*0.55, 130, 0.8);
+    drawCloud(W*0.8, 60, 0.6);
+
+    // rolling hills for depth
+    ctx.fillStyle = 'rgba(255,255,255,0.14)';
+    ctx.beginPath();
+    ctx.moveTo(0, GROUND_Y);
+    ctx.quadraticCurveTo(W*0.2, GROUND_Y-46, W*0.42, GROUND_Y-8);
+    ctx.quadraticCurveTo(W*0.65, GROUND_Y+30, W*0.85, GROUND_Y-30);
+    ctx.quadraticCurveTo(W*0.95, GROUND_Y-50, W, GROUND_Y-14);
+    ctx.lineTo(W, GROUND_Y); ctx.closePath(); ctx.fill();
+
+    // ground
+    const groundGrad = ctx.createLinearGradient(0,GROUND_Y,0,H);
+    groundGrad.addColorStop(0, getCss('--ground-light'));
+    groundGrad.addColorStop(1, getCss('--ground-dark'));
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, GROUND_Y, W, H-GROUND_Y);
+    ctx.fillStyle = 'rgba(0,0,0,0.08)';
+    ctx.fillRect(0, GROUND_Y, W, 6);
+
+    // slingshot
+    drawSlingshot();
+
+    // targets
+    for(const t of targets){
+      if(t.alive) drawTarget(t);
+    }
+
+    // trajectory preview while dragging
+    if(dragging && bird){
+      drawAimLine();
+    }
+
+    // ground contact shadows (depth cue for anything airborne)
+    if(bird && bird.launched) drawShadow(bird);
+    for(const sb of splitBirds) if(sb.alive) drawShadow(sb);
+
+    // split clones (render behind the main bird)
+    for(const sb of splitBirds){ drawBird(sb); }
+
+    // bird
+    if(bird) drawBird(bird);
+
+    // front rubber band on top, wrapping the loaded bird (removed the instant it's fired)
+    drawSlingshotFrontBand();
+
+    // particles
+    for(const p of particles){
+      ctx.globalAlpha = Math.max(0, p.life/0.6);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.trail ? 3 : 5, 0, Math.PI*2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+  }
+
+  function getCss(varName){
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+
+  function drawCloud(x,y,scale){
+    ctx.save();
+    ctx.translate(x,y);
+    ctx.scale(scale,scale);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(0,0,26,0,Math.PI*2);
+    ctx.arc(28,-10,20,0,Math.PI*2);
+    ctx.arc(50,0,24,0,Math.PI*2);
+    ctx.arc(24,12,22,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSlingshot(){
+    const base = slingBase();
+
+    // wooden fork posts (always visible, whether or not a bird is loaded)
+    ctx.strokeStyle = getCss('--wood-dark');
+    ctx.lineWidth = 10;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(base.x-16, base.y+6);
+    ctx.lineTo(base.x-16, base.y+58);
+    ctx.moveTo(base.x+16, base.y+6);
+    ctx.lineTo(base.x+16, base.y+58);
+    ctx.stroke();
+
+    const attached = bird && !bird.launched && !bird.wasLaunched;
+    const restX = attached ? bird.x : base.x;
+    const restY = attached ? bird.y : base.y - 22;
+
+    // back band (drawn behind the bird): always goes fork-to-fork, through the bird only while loaded
+    ctx.strokeStyle = '#4a2e17';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(base.x-16, base.y+6);
+    ctx.lineTo(restX, restY);
+    ctx.lineTo(base.x+16, base.y+6);
+    ctx.stroke();
+  }
+
+  // front band, drawn AFTER the bird so the pouch visually wraps around it while loaded
+  function drawSlingshotFrontBand(){
+    if(!bird || bird.launched || bird.wasLaunched) return; // rope only exists while a bird is loaded and un-fired
+    const base = slingBase();
+    ctx.strokeStyle = '#6b4523';
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(base.x-16, base.y+6);
+    ctx.lineTo(bird.x, bird.y);
+    ctx.lineTo(base.x+16, base.y+6);
+    ctx.stroke();
+  }
+
+  function drawShadow(b){
+    const height = Math.max(0, GROUND_Y - (b.y + b.radius));
+    const shrink = Math.max(0.25, 1 - height/260);
+    const alpha = Math.max(0.08, 0.32 - height/900);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.ellipse(b.x, GROUND_Y + 2, b.radius*0.9*shrink, b.radius*0.32*shrink, 0, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawAimLine(){
+    let dx = slingBase().x - dragPos.x;
+    let dy = slingBase().y - dragPos.y;
+    const maxDrag = 110;
+    const dist = Math.hypot(dx,dy);
+    if(dist > maxDrag){ dx = dx/dist*maxDrag; dy = dy/dist*maxDrag; }
+    ctx.setLineDash([6,8]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    let px = bird.x, py = bird.y;
+    let vx = dx*9.5, vy = dy*9.5;
+    const step = 0.02;
+    for(let i=0;i<22;i++){
+      vy += GRAVITY*step;
+      vx *= (1 - AIR_DRAG*step);
+      px += vx*step;
+      py += vy*step;
+      ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function drawBird(b){
+    const pos = (b === bird && dragging) ? dragPos : b;
+    const conf = BIRD_TYPES[b.type] || BIRD_TYPES.red;
+    const bodyColor = getCss(conf.color);
+    const darkColor = getCss(conf.colorDark);
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+
+    // tumble to face the direction of travel while airborne, tilt while being aimed
+    if((b.launched || b.alive) && (b.vx || b.vy)){
+      ctx.rotate(Math.atan2(b.vy, b.vx) * 0.6);
+    } else if(b === bird && dragging){
+      const base = slingBase();
+      ctx.rotate(Math.atan2(pos.y-base.y, pos.x-base.x) * 0.18);
+    }
+
+    // brief stretch-along-velocity pop right at launch, settling back to round
+    if(b.squash > 0){
+      const s = b.squash;
+      ctx.scale(1 + s*0.35, 1 - s*0.25);
+      b.squash = Math.max(0, s - 0.06);
+    }
+
+    // little charge glow if this bird has an unused ability and is mid-flight
+    if(b === bird && b.launched && conf.ability && !b.abilityUsed){
+      ctx.save();
+      ctx.globalAlpha = 0.35 + 0.25*Math.sin(performance.now()/120);
+      ctx.fillStyle = bodyColor;
+      ctx.beginPath();
+      ctx.arc(0,0,b.radius*1.5,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    ctx.fillStyle = bodyColor;
+    ctx.beginPath();
+    ctx.arc(0,0,b.radius,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = darkColor;
+    ctx.beginPath();
+    ctx.arc(0,b.radius*0.55,b.radius*0.55,0,Math.PI);
+    ctx.fill();
+    // eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-5,-4,5,0,Math.PI*2); ctx.arc(6,-4,5,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(-4,-4,2.2,0,Math.PI*2); ctx.arc(7,-4,2.2,0,Math.PI*2); ctx.fill();
+    // beak
+    ctx.fillStyle = '#FFC93C';
+    ctx.beginPath();
+    ctx.moveTo(b.radius*0.6,-2);
+    ctx.lineTo(b.radius*1.3,3);
+    ctx.lineTo(b.radius*0.6,8);
+    ctx.closePath();
+    ctx.fill();
+
+    // small emblem on the belly to tell species apart at a glance
+    if(conf.ability || b.type === 'green'){
+      ctx.font = `${Math.round(b.radius*0.7)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(conf.icon, 0, b.radius*0.55);
+    }
+    ctx.restore();
+  }
+
+  function drawTarget(t){
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.fillStyle = getCss('--pig-green');
+    ctx.beginPath();
+    ctx.arc(0,0,t.r,0,Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = getCss('--pig-green-dark');
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    // ears
+    ctx.fillStyle = getCss('--pig-green');
+    ctx.beginPath();
+    ctx.moveTo(-t.r*0.5,-t.r*0.8);
+    ctx.lineTo(-t.r*0.9,-t.r*1.35);
+    ctx.lineTo(-t.r*0.15,-t.r*0.95);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(t.r*0.5,-t.r*0.8);
+    ctx.lineTo(t.r*0.9,-t.r*1.35);
+    ctx.lineTo(t.r*0.15,-t.r*0.95);
+    ctx.fill();
+    // eyes
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(-8,-4,6,0,Math.PI*2); ctx.arc(8,-4,6,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(-7,-3,2.4,0,Math.PI*2); ctx.arc(9,-3,2.4,0,Math.PI*2); ctx.fill();
+    // snout
+    ctx.fillStyle = getCss('--pig-green-dark');
+    ctx.beginPath();
+    ctx.ellipse(0,8,9,6,0,0,Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = '#3d5a2a';
+    ctx.beginPath(); ctx.arc(-3,8,1.5,0,Math.PI*2); ctx.arc(3,8,1.5,0,Math.PI*2); ctx.fill();
+
+    ctx.restore();
+
+    // soft floating cloud platform under it if elevated (replaces the old wood pillar)
+    if(t.y + t.r < GROUND_Y - 2){
+      ctx.save();
+      ctx.translate(t.x, t.y + t.r + 6);
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, t.r*1.05, t.r*0.42, 0, 0, Math.PI*2);
+      ctx.ellipse(-t.r*0.5, -t.r*0.12, t.r*0.5, t.r*0.3, 0, 0, Math.PI*2);
+      ctx.ellipse(t.r*0.5, -t.r*0.12, t.r*0.5, t.r*0.3, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  requestAnimationFrame(loop);
+
+  // ---------------- Question modal ----------------
+  const overlay = document.getElementById('overlay');
+  const qtag = document.getElementById('qtag');
+  const qtext = document.getElementById('qtext');
+  const choicesEl = document.getElementById('choices');
+  const feedbackEl = document.getElementById('feedback');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function openQuestion(target){
+    paused = true;
+    const q = target.q;
+    qtag.textContent = q.tag;
+    qtext.textContent = q.q;
+    feedbackEl.textContent = '';
+    feedbackEl.className = 'feedback';
+    nextBtn.classList.remove('show');
+    choicesEl.innerHTML = '';
+
+    const order = q.choices.map((c,i)=>({c,i}));
+    q._order = order;
+
+    order.forEach(item => {
+      const btn = document.createElement('div');
+      btn.className = 'choice';
+      btn.textContent = item.c;
+      btn.addEventListener('click', () => selectChoice(item.i, q, target, btn));
+      choicesEl.appendChild(btn);
+    });
+
+    overlay.classList.add('show');
+  }
+
+  function selectChoice(idx, q, target, btnEl){
+    const buttons = Array.from(choicesEl.children);
+    buttons.forEach(b => b.classList.add('disabled'));
+    const correctIdx = q.answer;
+    if(idx === correctIdx){
+      btnEl.classList.add('correct');
+      feedbackEl.textContent = 'Correct! Target destroyed. +10 points';
+      feedbackEl.className = 'feedback correct';
+      score += 10;
+      target.alive = false;
+    } else {
+      btnEl.classList.add('wrong');
+      buttons[correctIdxToButtonIndex(q, correctIdx)].classList.add('correct');
+      feedbackEl.textContent = "Not quite — that target survives. Try the next one!";
+      feedbackEl.className = 'feedback wrong';
+      target.alive = true; // survives, bird already used
+    }
+    updateHUD();
+    nextBtn.classList.add('show');
+  }
+
+  function correctIdxToButtonIndex(q, correctIdx){
+    // order preserved 1:1 with q.choices index since we didn't shuffle positions
+    return correctIdx;
+  }
+
+  nextBtn.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    birdsLeft = Math.max(0, birdsLeft - 1);
+    updateHUD();
+    paused = false;
+    checkLevelState();
+    if(birdsLeft > 0 && !allTargetsDown()){
+      resetBird();
+    }
+  });
+
+  // ---------------- End screens ----------------
+  const endcard = document.getElementById('endcard');
+  const endTitle = document.getElementById('endTitle');
+  const endText = document.getElementById('endText');
+  const endBtn = document.getElementById('endBtn');
+
+  function showLevelComplete(){
+    endTitle.textContent = `Level ${level} Complete! 🎉`;
+    endText.textContent = `Nice work! Score: ${score}. Ready for level ${level+1}?`;
+    endBtn.textContent = 'Next Level ▶';
+    endBtn.onclick = () => {
+      endcard.classList.remove('show');
+      startLevel(level+1);
+    };
+    endcard.classList.add('show');
+  }
+
+  function showOutOfBirds(){
+    endTitle.textContent = 'Out of Birds!';
+    endText.textContent = `Some targets are still standing. Score: ${score}. Try level ${level} again?`;
+    endBtn.textContent = 'Retry Level';
+    endBtn.onclick = () => {
+      endcard.classList.remove('show');
+      startLevel(level);
+    };
+    endcard.classList.add('show');
+  }
+
+  // ---------------- Teacher Panel ----------------
+  const teacherBtn = document.getElementById('teacherBtn');
+  const teacherPanel = document.getElementById('teacherPanel');
+  const panelClose = document.getElementById('panelClose');
+  const fCategory = document.getElementById('fCategory');
+  const fQuestion = document.getElementById('fQuestion');
+  const fChoices = [0,1,2,3].map(i => document.getElementById('fChoice'+i));
+  const fLevel = document.getElementById('fLevel');
+  const addQuestionBtn = document.getElementById('addQuestionBtn');
+  const formError = document.getElementById('formError');
+  const modeRadios = document.querySelectorAll('input[name="qMode"]');
+  const modeWarning = document.getElementById('modeWarning');
+  const exportBtn = document.getElementById('exportBtn');
+  const importBtn = document.getElementById('importBtn');
+  const fileImport = document.getElementById('fileImport');
+  const clearBtn = document.getElementById('clearBtn');
+  const qListEl = document.getElementById('qList');
+  const qCountEl = document.getElementById('qCount');
+
+  teacherBtn.addEventListener('click', () => {
+    teacherPanel.classList.add('open');
+    paused = true;
+  });
+  panelClose.addEventListener('click', closeTeacherPanel);
+  function closeTeacherPanel(){
+    teacherPanel.classList.remove('open');
+    if(!overlay.classList.contains('show') && !endcard.classList.contains('show') &&
+       !document.getElementById('teamTurnCard').classList.contains('show') &&
+       !document.getElementById('rankingCard').classList.contains('show')){
+      paused = false;
+    }
+  }
+
+  function updateModeWarning(){
+    if(questionMode === 'teacher' && CUSTOM_QUESTIONS.length === 0){
+      modeWarning.textContent = "You haven't added any questions yet — add some, or switch back to \u2018both\u2019.";
+    } else {
+      modeWarning.textContent = '';
+    }
+  }
+
+  modeRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      if(e.target.checked) questionMode = e.target.value;
+      updateModeWarning();
+    });
+  });
+
+  addQuestionBtn.addEventListener('click', () => {
+    formError.textContent = '';
+    const category = fCategory.value.trim() || 'Custom';
+    const questionText = fQuestion.value.trim();
+    const choices = fChoices.map(el => el.value.trim());
+    const correctRadio = document.querySelector('input[name="fCorrect"]:checked');
+    const correctIdx = correctRadio ? parseInt(correctRadio.value, 10) : 0;
+    const lvl = parseInt(fLevel.value, 10);
+
+    if(!questionText){ formError.textContent = 'Please enter a question.'; return; }
+    if(choices.some(c => !c)){ formError.textContent = 'Please fill in all 4 answer choices.'; return; }
+
+    CUSTOM_QUESTIONS.push({ tag: category, q: questionText, choices: choices, answer: correctIdx, level: lvl });
+
+    fCategory.value = '';
+    fQuestion.value = '';
+    fChoices.forEach(el => el.value = '');
+    fLevel.value = '1';
+    document.querySelector('input[name="fCorrect"][value="0"]').checked = true;
+
+    renderQuestionList();
+  });
+
+  function renderQuestionList(){
+    qCountEl.textContent = CUSTOM_QUESTIONS.length;
+    updateModeWarning();
+    if(CUSTOM_QUESTIONS.length === 0){
+      qListEl.innerHTML = '<div class="empty-note">You haven\'t added any questions yet.</div>';
+      return;
+    }
+    qListEl.innerHTML = '';
+    CUSTOM_QUESTIONS.forEach((q, idx) => {
+      const item = document.createElement('div');
+      item.className = 'qlist-item';
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = `${q.tag} · Level ${q.level}`;
+      const qline = document.createElement('div');
+      qline.className = 'qline';
+      qline.textContent = q.q;
+      const aline = document.createElement('div');
+      aline.className = 'aline';
+      aline.textContent = '✓ ' + q.choices[q.answer];
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '🗑';
+      del.title = 'Delete this question';
+      del.addEventListener('click', () => {
+        CUSTOM_QUESTIONS.splice(idx, 1);
+        renderQuestionList();
+      });
+      item.appendChild(meta);
+      item.appendChild(qline);
+      item.appendChild(aline);
+      item.appendChild(del);
+      qListEl.appendChild(item);
+    });
+  }
+
+  exportBtn.addEventListener('click', () => {
+    if(CUSTOM_QUESTIONS.length === 0){
+      formError.textContent = '';
+      alert('You have no custom questions to export yet.');
+      return;
+    }
+    const blob = new Blob([JSON.stringify(CUSTOM_QUESTIONS, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'word-slinger-questions.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  importBtn.addEventListener('click', () => fileImport.click());
+  fileImport.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try{
+        const data = JSON.parse(ev.target.result);
+        if(!Array.isArray(data)) throw new Error('not an array');
+        const valid = data.filter(q =>
+          q && typeof q.q === 'string' &&
+          Array.isArray(q.choices) && q.choices.length === 4 &&
+          Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 3
+        ).map(q => ({
+          tag: q.tag || 'Custom',
+          q: q.q,
+          choices: q.choices,
+          answer: q.answer,
+          level: [1,2,3].includes(q.level) ? q.level : 1
+        }));
+        if(valid.length === 0){ alert('No valid questions were found in that file.'); return; }
+        CUSTOM_QUESTIONS = CUSTOM_QUESTIONS.concat(valid);
+        renderQuestionList();
+        alert(`Imported ${valid.length} question(s).`);
+      }catch(err){
+        alert('Could not read that file. Please choose a valid exported JSON file.');
+      }
+      fileImport.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if(CUSTOM_QUESTIONS.length === 0) return;
+    if(confirm('Remove all your custom questions? This cannot be undone (unless you exported them).')){
+      CUSTOM_QUESTIONS = [];
+      renderQuestionList();
+    }
+  });
+
+  // ---------------- Teams & Competition ----------------
+  const fTeamName = document.getElementById('fTeamName');
+  const addTeamBtn = document.getElementById('addTeamBtn');
+  const teamListEl = document.getElementById('teamList');
+  const fBirdsPerTurn = document.getElementById('fBirdsPerTurn');
+  const startRotationBtn = document.getElementById('startRotationBtn');
+  const teamBadge = document.getElementById('teamBadge');
+  const teamTurnCard = document.getElementById('teamTurnCard');
+  const rankingCard = document.getElementById('rankingCard');
+
+  addTeamBtn.addEventListener('click', addTeam);
+  fTeamName.addEventListener('keydown', (e) => { if(e.key === 'Enter') addTeam(); });
+  function addTeam(){
+    const name = fTeamName.value.trim();
+    if(!name) return;
+    teams.push({ name, score: 0 });
+    fTeamName.value = '';
+    renderTeamList();
+  }
+
+  function renderTeamList(){
+    if(teams.length === 0){
+      teamListEl.innerHTML = '<div class="empty-note">No teams added yet.</div>';
+      return;
+    }
+    teamListEl.innerHTML = '';
+    teams.forEach((t, idx) => {
+      const row = document.createElement('div');
+      row.className = 'qlist-item';
+      row.style.display = 'flex';
+      row.style.alignItems = 'center';
+      row.style.justifyContent = 'space-between';
+
+      const name = document.createElement('div');
+      name.style.fontWeight = '700';
+      name.style.fontFamily = "'Baloo 2',sans-serif";
+      name.textContent = t.name;
+
+      const right = document.createElement('div');
+      right.style.display = 'flex';
+      right.style.alignItems = 'center';
+      right.style.gap = '10px';
+
+      const sc = document.createElement('div');
+      sc.style.fontSize = '13px';
+      sc.style.color = '#3FA34D';
+      sc.style.fontWeight = '700';
+      sc.textContent = t.score + ' pts';
+
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.style.position = 'static';
+      del.textContent = '🗑';
+      del.title = 'Remove this team';
+      del.addEventListener('click', () => {
+        teams.splice(idx, 1);
+        renderTeamList();
+      });
+
+      right.appendChild(sc);
+      right.appendChild(del);
+      row.appendChild(name);
+      row.appendChild(right);
+      teamListEl.appendChild(row);
+    });
+  }
+
+  startRotationBtn.addEventListener('click', () => {
+    if(teams.length === 0){
+      alert('Please add at least one team first.');
+      return;
+    }
+    if(questionMode === 'teacher' && CUSTOM_QUESTIONS.length === 0){
+      alert("You selected \u2018only teacher's questions\u2019 but haven't added any yet. Add some questions first, or switch to \u2018both\u2019 mode.");
+      return;
+    }
+    birdsPerTurn = parseInt(fBirdsPerTurn.value, 10);
+    teams.forEach(t => t.score = 0);
+    round = 1;
+    currentTeamIndex = 0;
+    competitionActive = true;
+    turnEnding = true; // stays true until the first "Start Turn" click
+    teamBadge.style.display = '';
+    teacherPanel.classList.remove('open');
+    showTeamTurnCard();
+  });
+
+  function showTeamTurnCard(){
+    const team = teams[currentTeamIndex];
+    document.getElementById('roundNum').textContent = round;
+    document.getElementById('teamTurnTitle').textContent = `${team.name}, get ready!`;
+    document.getElementById('teamTurnText').textContent = `${birdsPerTurn} birds — answer questions correctly to score points.`;
+    teamTurnCard.classList.add('show');
+    paused = true;
+  }
+
+  document.getElementById('teamTurnStartBtn').addEventListener('click', () => {
+    teamTurnCard.classList.remove('show');
+    startTeamTurn();
+  });
+
+  function startTeamTurn(){
+    turnEnding = false;
+    score = 0;
+    birdsLeft = birdsPerTurn;
+    targets = makeTargetsForLevel(round);
+    usedBirdTypes = new Set();
+    selectedBirdType = 'red';
+    resetBird();
+    updateHUD();
+    paused = false;
+  }
+
+  function endTeamTurn(){
+    if(turnEnding) return;
+    turnEnding = true;
+    teams[currentTeamIndex].score += score;
+    renderTeamList();
+    currentTeamIndex++;
+    if(currentTeamIndex < teams.length){
+      showTeamTurnCard();
+    } else {
+      showRanking();
+    }
+  }
+
+  function showRanking(){
+    const sorted = [...teams].sort((a,b) => b.score - a.score);
+    const listEl = document.getElementById('rankingList');
+    listEl.innerHTML = '';
+    const medals = ['🥇','🥈','🥉'];
+    sorted.forEach((t, idx) => {
+      const row = document.createElement('div');
+      row.className = 'rank-row' + (idx === 0 ? ' first' : '');
+      const left = document.createElement('div');
+      left.className = 'rank-name';
+      left.textContent = `${medals[idx] || (idx+1) + '.'} ${t.name}`;
+      const right = document.createElement('div');
+      right.className = 'rank-score';
+      right.textContent = t.score + ' pts';
+      row.appendChild(left);
+      row.appendChild(right);
+      listEl.appendChild(row);
+    });
+    rankingCard.classList.add('show');
+  }
+
+  document.getElementById('playAnotherRoundBtn').addEventListener('click', () => {
+    rankingCard.classList.remove('show');
+    round++;
+    currentTeamIndex = 0;
+    turnEnding = true; // stays true until "Start Turn" is clicked
+    showTeamTurnCard();
+  });
+
+  document.getElementById('endCompetitionBtn').addEventListener('click', () => {
+    rankingCard.classList.remove('show');
+    competitionActive = false;
+    teamBadge.style.display = 'none';
+    startLevel(1);
+  });
+
+})();
+</script>
+</body>
+</html>
