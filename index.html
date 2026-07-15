@@ -56,6 +56,9 @@
     z-index:20;
     pointer-events:none;
   }
+  .topbar-group{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+  }
   .badge{
     pointer-events:auto;
     background:linear-gradient(180deg,#FFFDF8 0%, var(--ui-cream) 100%);
@@ -669,7 +672,8 @@
     .badge{ padding:6px 10px; font-size:14px; border-radius:12px; }
     .badge .label{ font-size:9px; }
     #title{ font-size:19px; top:6px; }
-    #topbar{ padding:8px 8px; gap:4px; flex-wrap:wrap; }
+    #topbar{ padding:8px 8px; }
+    .topbar-group{ gap:4px; }
     #teacherBtn{ padding:6px 9px; font-size:12px; }
     .bird-opt{ width:46px; padding:5px 2px 4px; }
     .bird-opt .ic{ font-size:18px; }
@@ -687,7 +691,7 @@
   <!-- ===== Landing: choose role ===== -->
   <div id="landingScreen" class="netscreen">
     <div class="net-card">
-      <h1>🐦 Thùy Mỹ Teacher</h1>
+      <h1>🐦 Word Slinger</h1>
       <p class="sub">Learn English by launching birds!</p>
       <div class="role-btn" id="roleHostBtn">
         <span class="ric">🧑‍🏫</span>
@@ -784,14 +788,18 @@
   <div id="title">🐦 Word Slinger</div>
   <div id="targetPips"></div>
   <div id="topbar">
-    <div class="badge"><span class="label" id="levelLabel">Level</span><span id="levelVal">1</span></div>
-    <div class="badge"><span class="label">Score</span><span id="scoreVal">0</span></div>
-    <div class="badge"><span id="birdsIcon">🐦</span> <span id="birdsVal">5</span> left</div>
-    <div class="badge" id="teamBadge"><span class="label">Team</span><span id="teamNameVal">-</span></div>
-    <div class="badge" id="roomBadge"><span class="label">Room</span><span id="roomCodeVal">-</span></div>
-    <button id="soundBtn" class="badge" title="Toggle sound">🔊</button>
-    <button id="teacherBtn">✏️ Teacher Panel</button>
-    <button id="leaveBtn" class="badge" title="Leave this room">🚪 Leave</button>
+    <div class="topbar-group topbar-left">
+      <div class="badge"><span class="label" id="levelLabel">Level</span><span id="levelVal">1</span></div>
+      <div class="badge"><span class="label">Score</span><span id="scoreVal">0</span></div>
+      <div class="badge"><span id="birdsIcon">🐦</span> <span id="birdsVal">5</span> left</div>
+      <div class="badge" id="teamBadge"><span class="label">Team</span><span id="teamNameVal">-</span></div>
+      <div class="badge" id="roomBadge"><span class="label">Room</span><span id="roomCodeVal">-</span></div>
+    </div>
+    <div class="topbar-group topbar-right">
+      <button id="soundBtn" class="badge" title="Toggle sound">🔊</button>
+      <button id="teacherBtn">✏️ Teacher Panel</button>
+      <button id="leaveBtn" class="badge" title="Leave this room">🚪 Leave</button>
+    </div>
   </div>
   <canvas id="game"></canvas>
   <div id="birdPicker">
@@ -1482,7 +1490,7 @@
     const maxDrag = 120;
     const dist = Math.hypot(dx,dy);
     if(dist > maxDrag){ dx = dx/dist*maxDrag; dy = dy/dist*maxDrag; }
-    const power = 13;
+    const power = 15;
     bird.vx = dx * power;
     bird.vy = dy * power;
     bird.launched = true;
@@ -2923,7 +2931,7 @@
     const btn = document.getElementById('copyCodeBtn');
     const original = btn.textContent;
     btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = original; }, 1000);
+    setTimeout(() => { btn.textContent = original; }, 900);
   });
 
   document.getElementById('hostQuestionsBtn').addEventListener('click', () => {
