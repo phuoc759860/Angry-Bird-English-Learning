@@ -83,6 +83,30 @@
     100%{transform:scale(1);}
   }
   .badge .label{font-size:12px;font-weight:600;color:#7a6a55;text-transform:uppercase;letter-spacing:.05em;}
+  #streakBadge{
+    background:linear-gradient(180deg,#FFF3D6 0%, #FFE1A8 100%);
+    border-color:var(--accent2);
+    color:#a9540a;
+    font-weight:800;
+  }
+  #streakBadge #streakIcon{ display:inline-block; }
+  #streakBadge.hot{
+    animation:streakGlow 0.9s ease-in-out infinite;
+  }
+  #streakBadge.hot #streakIcon{
+    animation:streakFlicker 0.5s ease-in-out infinite;
+    display:inline-block;
+  }
+  @keyframes streakGlow{
+    0%,100%{ box-shadow:0 4px 0 rgba(0,0,0,0.2); }
+    50%{ box-shadow:0 4px 0 rgba(0,0,0,0.2), 0 0 14px 3px rgba(255,111,60,0.6); }
+  }
+  @keyframes streakFlicker{
+    0%,100%{ transform:scale(1) rotate(-4deg); }
+    50%{ transform:scale(1.2) rotate(4deg); }
+  }
+  #fullscreenBtn{ font-size:17px; }
+  #fullscreenBtn.active{ opacity:.85; }
   #title{
     position:absolute; top:10px; left:50%; transform:translateX(-50%);
     font-family:'Baloo 2',sans-serif;
@@ -181,7 +205,14 @@
     font-size:12px; font-weight:800; padding:2px 9px; border-radius:8px; color:#fff;
     text-transform:uppercase; letter-spacing:.03em;
   }
-  canvas{display:block;width:100%;height:100%;}
+  canvas{display:block;width:100%;height:100%;
+  background: linear-gradient(
+    to bottom,
+    #79C8FF 0%,
+    #BFEFFF 55%,
+    #EAF9FF 100%
+);
+display:block;}
 
   /* Modal */
   #overlay{
@@ -675,6 +706,8 @@
     #topbar{ padding:8px 8px; }
     .topbar-group{ gap:4px; }
     #teacherBtn{ padding:6px 9px; font-size:12px; }
+    #streakBadge .label{ display:none; }
+    #fullscreenBtn{ font-size:14px; }
     .bird-opt{ width:46px; padding:5px 2px 4px; }
     .bird-opt .ic{ font-size:18px; }
     .bird-opt .nm{ font-size:8px; }
@@ -791,11 +824,13 @@
     <div class="topbar-group topbar-left">
       <div class="badge"><span class="label" id="levelLabel">Level</span><span id="levelVal">1</span></div>
       <div class="badge"><span class="label">Score</span><span id="scoreVal">0</span></div>
+      <div class="badge" id="streakBadge" style="display:none;"><span id="streakIcon">🔥</span><span id="streakVal">0</span><span class="label" style="margin-left:2px;">streak</span></div>
       <div class="badge"><span id="birdsIcon">🐦</span> <span id="birdsVal">5</span> left</div>
       <div class="badge" id="teamBadge"><span class="label">Team</span><span id="teamNameVal">-</span></div>
       <div class="badge" id="roomBadge"><span class="label">Room</span><span id="roomCodeVal">-</span></div>
     </div>
     <div class="topbar-group topbar-right">
+      <button id="fullscreenBtn" class="badge" title="Play full screen">⛶</button>
       <button id="soundBtn" class="badge" title="Toggle sound">🔊</button>
       <button id="teacherBtn">✏️ Teacher Panel</button>
       <button id="leaveBtn" class="badge" title="Leave this room">🚪 Leave</button>
@@ -986,10 +1021,46 @@
   let W, H, GROUND_Y;
 
   function resize(){
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    W = window.innerWidth;
+    H = window.innerHeight;
+
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
     GROUND_Y = H - 90;
-  }
+}
+
+  function updateWorld(){
+
+    // Slingshot
+    sling.x = 120;
+    sling.y = GROUND_Y;
+
+    // Sun
+    sun.x = W - 90;
+    sun.y = 80;
+
+    // Clouds
+    clouds.forEach(c=>{
+        c.y = c.ratioY * H;
+        c.x = c.ratioX * W;
+    });
+
+    // Pigs
+    pigs.forEach(p=>{
+        p.x = p.ratioX * W;
+        p.y = p.ratioY * H;
+    });
+
+}
   window.addEventListener('resize', resize);
   resize();
 
@@ -1223,6 +1294,68 @@
   });
   window.addEventListener('pointerdown', () => { Sound.unlock(); Sound.startMusic(); }, {once:true});
 
+  // ---------------- Fullscreen toggle ----------------
+  const fullscreenBtn = document.getElementById('fullscreenBtn');
+  const stageEl = document.getElementById('stage');
+  function isFullscreenActive(){
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+  function refreshFullscreenBtn(){
+    const active = isFullscreenActive();
+    fullscreenBtn.textContent = active ? '⤢' : '⛶';
+    fullscreenBtn.title = active ? 'Exit full screen' : 'Play full screen';
+    fullscreenBtn.classList.toggle('active', active);
+  }
+  if(!(stageEl.requestFullscreen || stageEl.webkitRequestFullscreen)){
+    fullscreenBtn.style.display = 'none';
+  }
+  fullscreenBtn.addEventListener('click', () => {
+    Sound.click();
+    try{
+      if(!isFullscreenActive()){
+        const req = stageEl.requestFullscreen || stageEl.webkitRequestFullscreen;
+        const p = req && req.call(stageEl);
+        if(p && p.catch) p.catch(() => {});
+      } else {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        const p = exit && exit.call(document);
+        if(p && p.catch) p.catch(() => {});
+      }
+    }catch(e){}
+  });
+  document.addEventListener("fullscreenchange", () => {
+
+    refreshFullscreenBtn();
+
+    resize();
+
+    if (!bird || !bird.launched) {
+        resetBird();
+    }
+
+    targets = makeTargetsForLevel(level);
+
+    render();
+
+});
+
+document.addEventListener("webkitfullscreenchange", () => {
+
+    refreshFullscreenBtn();
+
+    resize();
+
+    if (!bird || !bird.launched) {
+        resetBird();
+    }
+
+    targets = makeTargetsForLevel(level);
+
+    render();
+
+});
+  refreshFullscreenBtn();
+
   // ---------------- Question bank ----------------
   const QUESTIONS = [
     // easy vocabulary
@@ -1293,6 +1426,8 @@
   const AIR_DRAG = 0.35; // gentle horizontal air resistance, keeps arcs feeling grounded
   let level = 1;
   let score = 0;
+  let streak = 0;
+  let bestStreak = 0;
   let birdsLeft = 5;
   let birdsPerLevel = 5;
   let splitBirds = [];
@@ -1372,6 +1507,7 @@
 
   function startLevel(lvl){
     level = lvl;
+    streak = 0;
     birdsLeft = birdsPerLevel;
     targets = makeTargetsForLevel(lvl);
     usedBirdTypes = new Set();
@@ -1389,6 +1525,15 @@
       scoreEl.closest('.badge').classList.remove('pulse');
       void scoreEl.offsetWidth;
       scoreEl.closest('.badge').classList.add('pulse');
+    }
+    const streakBadgeEl = document.getElementById('streakBadge');
+    if(streak >= 2){
+      streakBadgeEl.style.display = 'flex';
+      document.getElementById('streakVal').textContent = streak;
+      streakBadgeEl.classList.toggle('hot', streak >= 3);
+    } else {
+      streakBadgeEl.style.display = 'none';
+      streakBadgeEl.classList.remove('hot');
     }
     document.getElementById('birdsVal').textContent = birdsLeft;
     if(bird){
@@ -1717,7 +1862,12 @@
   // ---------------- Rendering ----------------
   function render(){
     updateParticles(1/60);
-    ctx.clearRect(0,0,W,H);
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, "#87CEEB");
+    sky.addColorStop(1, "#DFF6FF");
+
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
     ctx.save();
     ctx.translate(shake.x, shake.y);
 
@@ -1733,9 +1883,9 @@
     ctx.fill();
 
     // clouds
-    drawCloud(W*0.2, 80, 1);
-    drawCloud(W*0.55, 130, 0.8);
-    drawCloud(W*0.8, 60, 0.6);
+    drawCloud(W*0.20, H*0.12, 1);
+    drawCloud(W*0.55, H*0.18, 0.8);
+    drawCloud(W*0.80, H*0.09, 0.6);
 
     // rolling hills for depth
     ctx.fillStyle = 'rgba(255,255,255,0.14)';
@@ -2027,7 +2177,7 @@
   // silent gap — a fixed length of silence no matter whether it's one underscore or ten dots.
   // Ordinary sentence punctuation (. , ! ?) is kept so the TTS engine still reads with natural
   // rhythm/intonation; everything else that isn't a letter/number/space/apostrophe is a blank marker.
-  const BLANK_PAUSE_MS = 450; // silence length used for every blank, regardless of its symbol count
+  const BLANK_PAUSE_MS = 150; // silence length used for every blank, regardless of its symbol count
   // (kept short on purpose — each new utterance already has its own brief engine start-up delay,
   // so the two add together into a natural-feeling pause without dragging the sentence out.)
 
@@ -2132,17 +2282,29 @@
     const correctIdx = q.answer;
     if(idx === correctIdx){
       btnEl.classList.add('correct');
-      feedbackEl.textContent = '✓ Correct! Target destroyed. +10 points';
-      feedbackEl.className = 'feedback correct';
-      score += 10;
+      streak += 1;
+      if(streak > bestStreak) bestStreak = streak;
+      const bonus = streak >= 5 ? 10 : (streak >= 3 ? 5 : 0);
+      const gained = 10 + bonus;
+      score += gained;
       target.alive = false;
-      Sound.correct();
+      if(bonus > 0){
+        feedbackEl.textContent = `✓ Correct! +${gained} points (🔥 ${streak}-streak bonus!)`;
+        Sound.correct();
+      } else {
+        feedbackEl.textContent = `✓ Correct! Target destroyed. +${gained} points`;
+        Sound.correct();
+      }
+      feedbackEl.className = 'feedback correct';
     } else {
       btnEl.classList.add('wrong');
       buttons[correctIdxToButtonIndex(q, correctIdx)].classList.add('correct');
-      feedbackEl.textContent = "✗ Not quite — that target survives. Try the next one!";
+      feedbackEl.textContent = streak >= 2
+        ? `✗ Not quite — that target survives. Your ${streak}-streak ends. Try the next one!`
+        : "✗ Not quite — that target survives. Try the next one!";
       feedbackEl.className = 'feedback wrong';
       target.alive = true; // survives, bird already used
+      streak = 0;
       Sound.wrong();
     }
     updateHUD();
@@ -2176,7 +2338,7 @@
   function showLevelComplete(){
     Sound.levelComplete();
     endTitle.textContent = `Level ${level} Complete! 🎉`;
-    endText.textContent = `Nice work! Score: ${score}. Ready for level ${level+1}?`;
+    endText.textContent = `Nice work! Score: ${score}${bestStreak >= 3 ? ` · 🔥 Best streak: ${bestStreak}` : ''}. Ready for level ${level+1}?`;
     endBtn.textContent = 'Next Level ▶';
     endBtn.onclick = () => {
       Sound.click();
@@ -2650,6 +2812,7 @@
   function startTeamTurn(){
     turnEnding = false;
     score = 0;
+    streak = 0;
     birdsLeft = birdsPerTurn;
     targets = makeTargetsForLevel(round);
     usedBirdTypes = new Set();
