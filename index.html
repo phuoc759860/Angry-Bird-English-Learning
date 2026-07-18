@@ -120,6 +120,8 @@
   }
   #fullscreenBtn{ font-size:17px; }
   #fullscreenBtn.active{ opacity:.85; }
+  #pauseBtn{ font-size:17px; }
+  #pauseBtn.active{ background:linear-gradient(180deg,#FFF3D6 0%, #FFE1A8 100%); border-color:var(--accent2); }
   #title{
     position:absolute; top:18px; left:50%; transform:translateX(-50%);
     font-family:'Baloo 2',sans-serif;
@@ -369,6 +371,11 @@
     background:rgba(20,20,10,0.55);
   }
   #endcard.show{display:flex;}
+  #pausecard{
+    position:absolute; inset:0; display:none; align-items:center; justify-content:center; z-index:59;
+    background:rgba(20,20,10,0.42); backdrop-filter:blur(2px);
+  }
+  #pausecard.show{display:flex;}
   .end-inner{
     background:var(--ui-cream); border:4px solid var(--wood-dark); border-radius:22px;
     padding:34px 30px; text-align:center; width:min(420px,88vw);
@@ -853,6 +860,7 @@
     <div class="topbar-group topbar-left">
       <div class="badge"><span class="label" id="levelLabel">Level</span><span id="levelVal">1</span></div>
       <div class="badge"><span class="label">Score</span><span id="scoreVal">0</span></div>
+      <div class="badge" id="bestBadge" title="Your all-time best score"><span class="label">Best</span><span id="bestVal">0</span></div>
       <div class="badge" id="streakBadge" style="display:none;"><span id="streakIcon">🔥</span><span id="streakVal">0</span><span class="label" style="margin-left:2px;">streak</span></div>
       <div class="badge"><span id="birdsIcon">🐦</span> <span id="birdsVal">5</span> left</div>
       <div class="badge" id="teamBadge"><span class="label">Team</span><span id="teamNameVal">-</span></div>
@@ -860,6 +868,7 @@
     </div>
     <div class="topbar-group topbar-right">
       <button id="fullscreenBtn" class="badge" title="Play full screen">⛶</button>
+      <button id="pauseBtn" class="badge" title="Pause game (P)">⏸</button>
       <button id="soundBtn" class="badge" title="Toggle sound">🔊</button>
       <button id="teacherBtn">✏️ Teacher Panel</button>
       <button id="leaveBtn" class="badge" title="Leave this room">🚪 Leave</button>
@@ -906,6 +915,14 @@
       <h2 id="endTitle">Level Complete!</h2>
       <p id="endText">Great job! You popped every target.</p>
       <button class="end-btn" id="endBtn">Next Level</button>
+    </div>
+  </div>
+
+  <div id="pausecard" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <div class="end-inner">
+      <h2 id="pauseTitle">⏸ Game Paused</h2>
+      <p>Take a breath. Press <b>P</b> or continue when you are ready.</p>
+      <button class="end-btn" id="resumeBtn">Continue ▶</button>
     </div>
   </div>
 
@@ -1385,6 +1402,25 @@ document.addEventListener("webkitfullscreenchange", () => {
 });
   refreshFullscreenBtn();
 
+  // ---------------- Pause ----------------
+  const pauseBtn = document.getElementById('pauseBtn');
+  const pauseCard = document.getElementById('pausecard');
+  function canPause(){
+    return !!appRole && !overlay.classList.contains('show') && !endcard.classList.contains('show') && !teamTurnCard.classList.contains('show');
+  }
+  function setManualPause(shouldPause){
+    if(shouldPause && !canPause()) return;
+    manuallyPaused = shouldPause;
+    paused = shouldPause;
+    pauseCard.classList.toggle('show', shouldPause);
+    pauseBtn.classList.toggle('active', shouldPause);
+    pauseBtn.textContent = shouldPause ? '▶' : '⏸';
+    pauseBtn.title = shouldPause ? 'Resume game (P)' : 'Pause game (P)';
+    if(shouldPause) stopSpeaking();
+  }
+  pauseBtn.addEventListener('click', () => { Sound.click(); setManualPause(!manuallyPaused); });
+  document.getElementById('resumeBtn').addEventListener('click', () => { Sound.click(); setManualPause(false); });
+
   // ---------------- Question bank ----------------
   const QUESTIONS = [
     // easy vocabulary
@@ -1457,6 +1493,8 @@ document.addEventListener("webkitfullscreenchange", () => {
   let score = 0;
   let streak = 0;
   let bestStreak = 0;
+  let personalBest = 0;
+  try{ personalBest = Math.max(0, parseInt(localStorage.getItem('wordSlingerPersonalBest'), 10) || 0); }catch(e){}
   let birdsLeft = 5;
   let birdsPerLevel = 5;
   let splitBirds = [];
@@ -1485,6 +1523,7 @@ document.addEventListener("webkitfullscreenchange", () => {
   let dragPos = null;
   let targets = []; // {x,y,r,alive,q}
   let paused = true; // true while modal open, between throws, or before a role is chosen
+  let manuallyPaused = false;
   let awaitingNext = false;
   let particles = [];
 
@@ -1535,6 +1574,10 @@ document.addEventListener("webkitfullscreenchange", () => {
   }
 
   function startLevel(lvl){
+    manuallyPaused = false;
+    pauseCard.classList.remove('show');
+    pauseBtn.classList.remove('active');
+    pauseBtn.textContent = '⏸';
     level = lvl;
     streak = 0;
     birdsLeft = birdsPerLevel;
@@ -1555,6 +1598,11 @@ document.addEventListener("webkitfullscreenchange", () => {
       void scoreEl.offsetWidth;
       scoreEl.closest('.badge').classList.add('pulse');
     }
+    if(score > personalBest){
+      personalBest = score;
+      try{ localStorage.setItem('wordSlingerPersonalBest', String(personalBest)); }catch(e){}
+    }
+    document.getElementById('bestVal').textContent = personalBest;
     const streakBadgeEl = document.getElementById('streakBadge');
     if(streak >= 2){
       streakBadgeEl.style.display = 'flex';
@@ -2281,7 +2329,12 @@ document.addEventListener("webkitfullscreenchange", () => {
     nextBtn.classList.remove('show');
     choicesEl.innerHTML = '';
 
+    // Shuffle choices every time so the correct answer cannot be learned by position.
     const order = q.choices.map((c,i)=>({c,i}));
+    for(let i=order.length-1; i>0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [order[i], order[j]] = [order[j], order[i]];
+    }
     q._order = order;
 
     const letters = ['A','B','C','D'];
@@ -2341,8 +2394,7 @@ document.addEventListener("webkitfullscreenchange", () => {
   }
 
   function correctIdxToButtonIndex(q, correctIdx){
-    // order preserved 1:1 with q.choices index since we didn't shuffle positions
-    return correctIdx;
+    return q._order.findIndex(item => item.i === correctIdx);
   }
 
   nextBtn.addEventListener('click', () => {
@@ -2355,6 +2407,41 @@ document.addEventListener("webkitfullscreenchange", () => {
     checkLevelState();
     if(birdsLeft > 0 && !allTargetsDown()){
       resetBird();
+    }
+  });
+
+  // Keyboard controls make the game easier to use on a classroom display or laptop.
+  window.addEventListener('keydown', (e) => {
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = document.activeElement && document.activeElement.tagName;
+    if(tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+    const key = e.key.toLowerCase();
+    if(key === 'p'){
+      if(canPause()){
+        e.preventDefault();
+        Sound.click();
+        setManualPause(!manuallyPaused);
+      }
+      return;
+    }
+    if(overlay.classList.contains('show')){
+      if(key === 'r'){
+        e.preventDefault();
+        Sound.click();
+        speakText(qtext.textContent);
+      } else if(e.key >= '1' && e.key <= '4' && !nextBtn.classList.contains('show')){
+        const choice = choicesEl.children[Number(e.key)-1];
+        if(choice){ e.preventDefault(); choice.click(); }
+      } else if((e.key === 'Enter' || e.key === ' ') && nextBtn.classList.contains('show')){
+        e.preventDefault();
+        nextBtn.click();
+      }
+      return;
+    }
+    if(e.key === ' ' && !paused && bird && bird.launched){
+      e.preventDefault();
+      triggerAbility();
     }
   });
 
