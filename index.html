@@ -327,6 +327,19 @@
   .choice.correct .choice-letter{ background:rgba(255,255,255,0.3); color:#fff; }
   .choice.wrong{ background:linear-gradient(180deg,#E25858,var(--wrong)); border-color:#a13030; color:#fff; }
   .choice.wrong .choice-letter{ background:rgba(255,255,255,0.3); color:#fff; }
+
+  /* Picture choices (Listen question type) */
+  .choice.pic{ position:relative; padding:10px; justify-content:center; }
+  .choice.pic .pic-img{
+    width:100%; height:120px; object-fit:contain; background:#fff;
+    border-radius:10px; display:block;
+  }
+  .choice.pic:hover .pic-img{ background:#FFF6E8; }
+  .choice.correct .pic-img, .choice.wrong .pic-img{ background:rgba(255,255,255,0.85); }
+  .choice.pic .choice-letter{
+    position:absolute; top:-9px; left:-9px; z-index:1;
+    box-shadow:0 2px 8px rgba(0,0,0,0.22);
+  }
   .choice.disabled{ pointer-events:none; opacity:.55; }
   .feedback{
     margin-top:16px;
@@ -585,6 +598,29 @@
   .qlist-item .qthumb{
     width:44px; height:44px; object-fit:cover; border-radius:8px; border:2px solid #E0D2B8;
     float:right; margin-left:8px;
+  }
+
+  /* Per-choice picture upload (Listen question type) */
+  #cImgFile{ display:none; }
+  .choice-img-btn{
+    flex-shrink:0; display:none; align-items:center; justify-content:center;
+    width:40px; height:40px; font-size:17px; cursor:pointer; padding:0;
+    background:linear-gradient(180deg,#fffdfa 0%,#fff2d6 100%);
+    border:2px dashed #d8c49c; border-radius:10px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .choice-img-btn:hover{ border-color:var(--accent); background:#FFF6E8; }
+  #choiceInputs.listen-mode .choice-img-btn{ display:flex; }
+  #choiceInputs.listen-mode input[type=text]{ display:none; }
+  .choice-input-row .choice-img-wrap{ display:none; position:relative; flex-shrink:0; }
+  .choice-input-row .choice-img-wrap.show{ display:inline-flex; }
+  .choice-input-row .choice-img-wrap img{
+    width:40px; height:40px; object-fit:cover; border-radius:8px; border:2px solid #E0D2B8; display:block;
+  }
+  .choice-input-row .choice-img-remove{
+    position:absolute; top:-7px; right:-7px; width:20px; height:20px; border-radius:50%;
+    background:var(--wrong); color:#fff; border:2px solid #fff; font-size:11px; line-height:1;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;
   }
 
   /* Question image shown in-game when a question appears */
@@ -959,10 +995,17 @@
           <input type="text" id="fCategory" placeholder="Vocabulary">
         </div>
         <div class="field-row">
-          <label>Question</label>
-          <input type="text" id="fQuestion" placeholder="What is the opposite of 'hot'?">
+          <label>Question type</label>
+          <select id="fType">
+            <option value="text">📖 Read — question text with word choices</option>
+            <option value="listen">🔊 Listen — speaks a word, answers are pictures</option>
+          </select>
         </div>
         <div class="field-row">
+          <label id="fQuestionLabel">Question</label>
+          <input type="text" id="fQuestion" placeholder="What is the opposite of 'hot'?">
+        </div>
+        <div class="field-row" id="mainPictureRow">
           <label>Picture (optional) — shown when a student gets this question</label>
           <div class="img-upload-row">
             <button type="button" class="img-upload-btn" id="fImageUploadBtn">🖼️ Choose picture…</button>
@@ -975,24 +1018,34 @@
         </div>
         <div class="field-row">
           <label>Answer choices — select the correct one</label>
-          <div class="choice-inputs">
+          <div class="choice-inputs" id="choiceInputs">
             <div class="choice-input-row">
               <input type="radio" name="fCorrect" value="0" checked>
+              <span class="choice-img-wrap" id="cImgWrap0"><img id="cImgPrev0" alt="Choice A picture"><button type="button" class="choice-img-remove" id="cImgRemove0" title="Remove picture">✕</button></span>
+              <button type="button" class="choice-img-btn" id="cImgBtn0" title="Choose picture for choice A">🖼️</button>
               <input type="text" id="fChoice0" placeholder="Choice A">
             </div>
             <div class="choice-input-row">
               <input type="radio" name="fCorrect" value="1">
+              <span class="choice-img-wrap" id="cImgWrap1"><img id="cImgPrev1" alt="Choice B picture"><button type="button" class="choice-img-remove" id="cImgRemove1" title="Remove picture">✕</button></span>
+              <button type="button" class="choice-img-btn" id="cImgBtn1" title="Choose picture for choice B">🖼️</button>
               <input type="text" id="fChoice1" placeholder="Choice B">
             </div>
             <div class="choice-input-row">
               <input type="radio" name="fCorrect" value="2">
+              <span class="choice-img-wrap" id="cImgWrap2"><img id="cImgPrev2" alt="Choice C picture"><button type="button" class="choice-img-remove" id="cImgRemove2" title="Remove picture">✕</button></span>
+              <button type="button" class="choice-img-btn" id="cImgBtn2" title="Choose picture for choice C">🖼️</button>
               <input type="text" id="fChoice2" placeholder="Choice C">
             </div>
             <div class="choice-input-row">
               <input type="radio" name="fCorrect" value="3">
+              <span class="choice-img-wrap" id="cImgWrap3"><img id="cImgPrev3" alt="Choice D picture"><button type="button" class="choice-img-remove" id="cImgRemove3" title="Remove picture">✕</button></span>
+              <button type="button" class="choice-img-btn" id="cImgBtn3" title="Choose picture for choice D">🖼️</button>
               <input type="text" id="fChoice3" placeholder="Choice D">
             </div>
           </div>
+          <input type="file" id="cImgFile" accept="image/*">
+          <div class="panel-footer-note" id="choiceModeHint" style="display:none;">Listen mode: each choice needs its own picture — students hear the word and tap the matching picture. The word itself is never shown.</div>
         </div>
         <div class="field-row">
           <label>Difficulty level (appears from this level onward)</label>
@@ -2309,20 +2362,29 @@ document.addEventListener("webkitfullscreenchange", () => {
   if(!canSpeak) readQBtn.style.display = 'none';
   readQBtn.addEventListener('click', () => {
     Sound.click();
-    speakText(qtext.textContent);
+    speakText(activeQuestion ? activeQuestion.q : qtext.textContent);
   });
 
   function openQuestion(target){
     paused = true;
     const q = target.q;
+    activeQuestion = q;
+    const isListen = q.type === 'listen';
     qtag.textContent = q.tag;
-    qtext.textContent = q.q;
-    if(q.image){
-      qImg.src = q.image;
-      qImgWrap.classList.add('show');
-    } else {
+    if(isListen){
+      // Never show the word on screen — students must recognise it by ear.
+      qtext.textContent = '\ud83d\udd0a Listen! Which picture matches the word?';
       qImg.src = '';
       qImgWrap.classList.remove('show');
+    } else {
+      qtext.textContent = q.q;
+      if(q.image){
+        qImg.src = q.image;
+        qImgWrap.classList.add('show');
+      } else {
+        qImg.src = '';
+        qImgWrap.classList.remove('show');
+      }
     }
     feedbackEl.textContent = '';
     feedbackEl.className = 'feedback';
@@ -2340,21 +2402,30 @@ document.addEventListener("webkitfullscreenchange", () => {
     const letters = ['A','B','C','D'];
     order.forEach((item, i) => {
       const btn = document.createElement('div');
-      btn.className = 'choice';
+      btn.className = 'choice' + (isListen ? ' pic' : '');
       const badge = document.createElement('span');
       badge.className = 'choice-letter';
       badge.textContent = letters[i] || '';
-      const label = document.createElement('span');
-      label.className = 'choice-label';
-      label.textContent = item.c;
       btn.appendChild(badge);
-      btn.appendChild(label);
+      if(isListen){
+        const img = document.createElement('img');
+        img.className = 'pic-img';
+        img.alt = 'Choice ' + (letters[i] || '');
+        img.src = (q.images && q.images[item.i]) || '';
+        btn.appendChild(img);
+      } else {
+        const label = document.createElement('span');
+        label.className = 'choice-label';
+        label.textContent = item.c;
+        btn.appendChild(label);
+      }
       btn.addEventListener('click', () => selectChoice(item.i, q, target, btn));
       choicesEl.appendChild(btn);
     });
 
     overlay.classList.add('show');
-    // Read the question aloud automatically once it appears.
+    // Read the question aloud automatically once it appears
+    // (for Listen questions this speaks the target word itself).
     setTimeout(() => speakText(q.q), 220);
   }
 
@@ -2429,7 +2500,7 @@ document.addEventListener("webkitfullscreenchange", () => {
       if(key === 'r'){
         e.preventDefault();
         Sound.click();
-        speakText(qtext.textContent);
+        speakText(activeQuestion ? activeQuestion.q : qtext.textContent);
       } else if(e.key >= '1' && e.key <= '4' && !nextBtn.classList.contains('show')){
         const choice = choicesEl.children[Number(e.key)-1];
         if(choice){ e.preventDefault(); choice.click(); }
@@ -2482,7 +2553,17 @@ document.addEventListener("webkitfullscreenchange", () => {
   const teacherPanel = document.getElementById('teacherPanel');
   const panelClose = document.getElementById('panelClose');
   const fCategory = document.getElementById('fCategory');
+  const fType = document.getElementById('fType');
+  const fQuestionLabel = document.getElementById('fQuestionLabel');
   const fQuestion = document.getElementById('fQuestion');
+  const mainPictureRow = document.getElementById('mainPictureRow');
+  const choiceInputs = document.getElementById('choiceInputs');
+  const cImgFile = document.getElementById('cImgFile');
+  const choiceModeHint = document.getElementById('choiceModeHint');
+  const cImgBtns = [0,1,2,3].map(i => document.getElementById('cImgBtn'+i));
+  const cImgWraps = [0,1,2,3].map(i => document.getElementById('cImgWrap'+i));
+  const cImgPrevs = [0,1,2,3].map(i => document.getElementById('cImgPrev'+i));
+  const cImgRemoves = [0,1,2,3].map(i => document.getElementById('cImgRemove'+i));
   const fChoices = [0,1,2,3].map(i => document.getElementById('fChoice'+i));
   const fLevel = document.getElementById('fLevel');
   const fImageUploadBtn = document.getElementById('fImageUploadBtn');
@@ -2491,6 +2572,9 @@ document.addEventListener("webkitfullscreenchange", () => {
   const fImagePreview = document.getElementById('fImagePreview');
   const fImageRemoveBtn = document.getElementById('fImageRemoveBtn');
   let pendingQuestionImage = null; // data URL for the picture being attached to the next question
+  let pendingChoiceImages = [null,null,null,null]; // per-choice pictures for Listen questions
+  let choiceImgTarget = -1; // which choice slot the shared file input is currently picking for
+  let activeQuestion = null; // question currently shown in the overlay (for replay-aloud)
   const addQuestionBtn = document.getElementById('addQuestionBtn');
   const formError = document.getElementById('formError');
   const modeRadios = document.querySelectorAll('input[name="qMode"]');
@@ -2538,6 +2622,59 @@ document.addEventListener("webkitfullscreenchange", () => {
   });
 
   fImageUploadBtn.addEventListener('click', () => fQuestionImage.click());
+
+  // Swaps the form between Read mode (text question + word choices) and
+  // Listen mode (a spoken word + picture-only choices).
+  function isListenMode(){ return fType.value === 'listen'; }
+  function updateFormMode(){
+    const listen = isListenMode();
+    choiceInputs.classList.toggle('listen-mode', listen);
+    fQuestionLabel.textContent = listen ? 'Word to speak aloud' : 'Question';
+    fQuestion.placeholder = listen
+      ? "e.g. pencil — students hear it and pick the matching picture"
+      : "What is the opposite of 'hot'?";
+    mainPictureRow.style.display = listen ? 'none' : '';
+    choiceModeHint.style.display = listen ? '' : 'none';
+  }
+  fType.addEventListener('change', () => { Sound.click(); updateFormMode(); });
+
+  cImgBtns.forEach((btn, i) => btn.addEventListener('click', () => {
+    Sound.click();
+    choiceImgTarget = i;
+    cImgFile.click();
+  }));
+  cImgRemoves.forEach((btn, i) => btn.addEventListener('click', () => {
+    Sound.click();
+    pendingChoiceImages[i] = null;
+    cImgPrevs[i].src = '';
+    cImgWraps[i].classList.remove('show');
+  }));
+  function clearChoiceImages(){
+    pendingChoiceImages = [null,null,null,null];
+    cImgPrevs.forEach(el => el.src = '');
+    cImgWraps.forEach(el => el.classList.remove('show'));
+  }
+  cImgFile.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file || choiceImgTarget < 0){ cImgFile.value = ''; return; }
+    if(!file.type.startsWith('image/')){
+      formError.textContent = 'Please choose an image file.';
+      cImgFile.value = '';
+      return;
+    }
+    formError.textContent = '';
+    const slot = choiceImgTarget;
+    downscaleImage(file, 320, (dataUrl) => {
+      if(!dataUrl){
+        formError.textContent = 'Could not read that picture — please try another file.';
+        return;
+      }
+      pendingChoiceImages[slot] = dataUrl;
+      cImgPrevs[slot].src = dataUrl;
+      cImgWraps[slot].classList.add('show');
+    });
+    cImgFile.value = '';
+  });
 
   fImageRemoveBtn.addEventListener('click', () => {
     pendingQuestionImage = null;
@@ -2593,6 +2730,8 @@ document.addEventListener("webkitfullscreenchange", () => {
 
   function resetQuestionForm(){
     fCategory.value = '';
+    fType.value = 'text';
+    updateFormMode();
     fQuestion.value = '';
     fChoices.forEach(el => el.value = '');
     fLevel.value = '1';
@@ -2601,6 +2740,7 @@ document.addEventListener("webkitfullscreenchange", () => {
     fQuestionImage.value = '';
     fImagePreview.src = '';
     fImagePreviewWrap.classList.remove('show');
+    clearChoiceImages();
   }
 
   // Leaves edit mode (used both after a successful save and when the teacher clicks Cancel).
@@ -2619,11 +2759,23 @@ document.addEventListener("webkitfullscreenchange", () => {
     formError.textContent = '';
     editingIndex = idx;
     fCategory.value = q.tag || '';
+    fType.value = (q.type === 'listen') ? 'listen' : 'text';
+    updateFormMode();
     fQuestion.value = q.q || '';
-    q.choices.forEach((c, i) => { if(fChoices[i]) fChoices[i].value = c; });
+    q.choices.forEach((c, i) => { if(fChoices[i]) fChoices[i].value = c || ''; });
     const radio = document.querySelector(`input[name="fCorrect"][value="${q.answer}"]`);
     if(radio) radio.checked = true;
     fLevel.value = String(q.level || 1);
+    clearChoiceImages();
+    if(q.type === 'listen' && Array.isArray(q.images)){
+      q.images.forEach((im, i) => {
+        if(im && i < 4){
+          pendingChoiceImages[i] = im;
+          cImgPrevs[i].src = im;
+          cImgWraps[i].classList.add('show');
+        }
+      });
+    }
     if(q.image){
       pendingQuestionImage = q.image;
       fImagePreview.src = q.image;
@@ -2649,6 +2801,7 @@ document.addEventListener("webkitfullscreenchange", () => {
 
   addQuestionBtn.addEventListener('click', () => {
     formError.textContent = '';
+    const listen = isListenMode();
     const category = fCategory.value.trim() || 'Custom';
     const questionText = fQuestion.value.trim();
     const choices = fChoices.map(el => el.value.trim());
@@ -2656,11 +2809,27 @@ document.addEventListener("webkitfullscreenchange", () => {
     const correctIdx = correctRadio ? parseInt(correctRadio.value, 10) : 0;
     const lvl = parseInt(fLevel.value, 10);
 
-    if(!questionText){ formError.textContent = 'Please enter a question.'; return; }
-    if(choices.some(c => !c)){ formError.textContent = 'Please fill in all 4 answer choices.'; return; }
+    if(!questionText){
+      formError.textContent = listen ? 'Please enter the word to speak aloud.' : 'Please enter a question.';
+      return;
+    }
+    if(listen){
+      if(pendingChoiceImages.some(im => !im)){
+        formError.textContent = 'Please choose a picture for all 4 answer choices.';
+        return;
+      }
+    } else if(choices.some(c => !c)){
+      formError.textContent = 'Please fill in all 4 answer choices.';
+      return;
+    }
 
-    const qData = { tag: category, q: questionText, choices: choices, answer: correctIdx, level: lvl };
-    if(pendingQuestionImage) qData.image = pendingQuestionImage;
+    let qData;
+    if(listen){
+      qData = { tag: category, q: questionText, type:'listen', choices:['','','',''], images: pendingChoiceImages.slice(), answer: correctIdx, level: lvl };
+    } else {
+      qData = { tag: category, q: questionText, choices: choices, answer: correctIdx, level: lvl };
+      if(pendingQuestionImage) qData.image = pendingQuestionImage;
+    }
 
     if(editingIndex !== null && editingIndex >= 0 && editingIndex < CUSTOM_QUESTIONS.length){
       CUSTOM_QUESTIONS[editingIndex] = qData;
@@ -2683,15 +2852,16 @@ document.addEventListener("webkitfullscreenchange", () => {
       const item = document.createElement('div');
       item.className = 'qlist-item';
       if(idx === editingIndex) item.style.outline = '3px solid var(--accent2)';
+      const isListen = q.type === 'listen';
       const meta = document.createElement('div');
       meta.className = 'meta';
-      meta.textContent = `${q.tag} · Level ${q.level}`;
+      meta.textContent = `${q.tag} · Level ${q.level}${isListen ? ' · 🔊 Listen' : ''}`;
       const qline = document.createElement('div');
       qline.className = 'qline';
-      qline.textContent = q.q;
+      qline.textContent = isListen ? `\ud83d\udd0a ${q.q}` : q.q;
       const aline = document.createElement('div');
       aline.className = 'aline';
-      aline.textContent = '✓ ' + q.choices[q.answer];
+      aline.textContent = isListen ? '\u2713 Correct picture selected' : '\u2713 ' + q.choices[q.answer];
       const edit = document.createElement('button');
       edit.className = 'del';
       edit.style.right = '34px';
@@ -2714,11 +2884,12 @@ document.addEventListener("webkitfullscreenchange", () => {
         }
       });
       item.appendChild(meta);
-      if(q.image){
+      const thumbSrc = q.image || (isListen && Array.isArray(q.images) ? q.images[q.answer] : null);
+      if(thumbSrc){
         const thumb = document.createElement('img');
         thumb.className = 'qthumb';
-        thumb.src = q.image;
-        thumb.alt = 'Question picture';
+        thumb.src = thumbSrc;
+        thumb.alt = isListen ? 'Correct answer picture' : 'Question picture';
         item.appendChild(thumb);
       }
       item.appendChild(qline);
@@ -2755,18 +2926,30 @@ document.addEventListener("webkitfullscreenchange", () => {
       try{
         const data = JSON.parse(ev.target.result);
         if(!Array.isArray(data)) throw new Error('not an array');
-        const valid = data.filter(q =>
-          q && typeof q.q === 'string' &&
+        const baseOk = q => q && typeof q.q === 'string' &&
           Array.isArray(q.choices) && q.choices.length === 4 &&
-          Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 3
-        ).map(q => ({
-          tag: q.tag || 'Custom',
-          q: q.q,
-          choices: q.choices,
-          answer: q.answer,
-          level: [1,2,3].includes(q.level) ? q.level : 1,
-          image: typeof q.image === 'string' ? q.image : undefined
-        }));
+          Number.isInteger(q.answer) && q.answer >= 0 && q.answer <= 3;
+        const valid = data.filter(q => {
+          if(!baseOk(q)) return false;
+          if(q.type === 'listen'){
+            return Array.isArray(q.images) && q.images.length === 4 && q.images.every(im => typeof im === 'string' && im);
+          }
+          return true;
+        }).map(q => {
+          const out = {
+            tag: q.tag || 'Custom',
+            q: q.q,
+            choices: q.choices,
+            answer: q.answer,
+            level: [1,2,3].includes(q.level) ? q.level : 1,
+            image: typeof q.image === 'string' ? q.image : undefined
+          };
+          if(q.type === 'listen'){
+            out.type = 'listen';
+            out.images = q.images.slice(0, 4);
+          }
+          return out;
+        });
         if(valid.length === 0){ alert('No valid questions were found in that file.'); return; }
         CUSTOM_QUESTIONS = CUSTOM_QUESTIONS.concat(valid);
         renderQuestionList();
